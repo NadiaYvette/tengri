@@ -4,16 +4,16 @@ let Schema = https://raw.githubusercontent.com/NadiaYvette/gachi/refs/heads/mast
 let PackagePrecursor = { name : Text, synopsis : Text }
 let packagePrecursorList
   = [ { name = "tengri-sulde"
-      , synopsis = "Precompiled algebraic prelude re-exporting gongju, polytropos, and total pattern peelers"
+      , synopsis = "Precompiled algebraic prelude re-exporting gongju and polytropos"
       }
     , { name = "tengri-lus"
-      , synopsis = "Type-directed stdin/stdout stream channels, regex conduits, and evacuability-polymorphic aggregation"
+      , synopsis = "Stream channels, regex conduits, and evacuable aggregation"
       }
     , { name = "tengri-darkhan"
       , synopsis = "Abductive spine and arity bridge synthesizer powered by Gargamelle and Gongju"
       }
     , { name = "tengri-savdag"
-      , synopsis = "Persistent warm GHC API daemon with SCM_RIGHTS file-descriptor passing and MCP introspection"
+      , synopsis = "Warm GHC API daemon with SCM_RIGHTS and MCP introspection"
       }
     , { name = "tengri-toli"
       , synopsis = "Multi-shell completion, inline type reflection mirror, and Core inspection lens"
@@ -65,7 +65,7 @@ let project : Schema.Project
     , cabalVersion = "3.12"
     , remotes =
       [ { name = "disroot",  url = "git@git.disroot.org:NadiaYvette/tengri" }
-      , { name = "framagit", url = "git@framagit.org:NadiaYvette/tengri
+      , { name = "framagit", url = "git@framagit.org:NadiaYvette/tengri" }
       , { name = "gitcode",  url = "git@gitcode.com:NadiaYvette/tengri" }
       , { name = "github",   url = "git@github.com:NadiaYvette/tengri" }
       -- I'm not sure there's enough upstream rad integration

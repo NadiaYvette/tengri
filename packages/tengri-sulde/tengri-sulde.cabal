@@ -1,9 +1,9 @@
 cabal-version: 3.0
 name: tengri-sulde
 version: 0.1.0.0
-synopsis: Precompiled algebraic prelude re-exporting gongju, polytropos, and total pattern peelers
+synopsis: Precompiled algebraic prelude re-exporting gongju and polytropos
 description:
-  Precompiled algebraic prelude re-exporting gongju, polytropos, and total pattern peelers for the tengri ecosystem.
+  Precompiled algebraic prelude re-exporting gongju and polytropos for the tengri ecosystem.
 license: EUPL-1.2
 license-file: LICENSE
 author: Nadia Yvette Chambers

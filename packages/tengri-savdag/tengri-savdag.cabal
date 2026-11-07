@@ -1,9 +1,9 @@
 cabal-version: 3.0
 name: tengri-savdag
 version: 0.1.0.0
-synopsis: Persistent warm GHC API daemon with SCM_RIGHTS file-descriptor passing and MCP introspection
+synopsis: Warm GHC API daemon with SCM_RIGHTS and MCP introspection
 description:
-  Persistent warm GHC API daemon with SCM_RIGHTS file-descriptor passing and MCP introspection for the tengri ecosystem.
+  Warm GHC API daemon with SCM_RIGHTS and MCP introspection for the tengri ecosystem.
 license: EUPL-1.2
 license-file: LICENSE
 author: Nadia Yvette Chambers

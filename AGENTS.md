@@ -21,9 +21,16 @@ Pointer file. Canonical sources win on any disagreement.
 - [`.agents/rules/compiler-verification.md`](.agents/rules/compiler-verification.md) — Zero-log compiler verification, tests, and zero-contamination.
 - [`.agents/rules/documentation-precedence.md`](.agents/rules/documentation-precedence.md) — Precedence rule ("code wins at runtime; notes corrected regardless").
 
+## Subdivided operational skills (`.agents/skills/`)
+
+- [`.agents/skills/code-navigation/SKILL.md`](.agents/skills/code-navigation/SKILL.md) — Fast, token-efficient code navigation using tags, ripgrep, and ast-grep.
+- [`.agents/skills/contextful/SKILL.md`](.agents/skills/contextful/SKILL.md) — Query project context packs, local FTS5 BM25 search.
+- [`.agents/skills/tricorder/SKILL.md`](.agents/skills/tricorder/SKILL.md) — Check continuous GHCi build status and zero-log compiler diagnostics.
+- [`.agents/skills/yamaarashi/SKILL.md`](.agents/skills/yamaarashi/SKILL.md) — Autonomous task packet runner and ASCII Kanban board projection.
+
 ## Operational advisories
 
 1. **Design docs are load-bearing.** Stale notes must be corrected in the same change set.
 2. Commits: descriptive-imperative subject under 72 chars, body explains why. AI attribution uses git trailers per `sarutahiko`: `Assisted-by: <Tool> (<Provider> / <Model>)`.
-3. Toolchain: GHC 9.10.1 / Cabal 3.12.
+3. Toolchain: GHC 9.14.1 / Cabal 3.18.
 4. Two-file loop: Update `STATE.md` before ending or resetting a session.

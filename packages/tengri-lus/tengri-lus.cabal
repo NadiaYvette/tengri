@@ -1,9 +1,9 @@
 cabal-version: 3.0
 name: tengri-lus
 version: 0.1.0.0
-synopsis: Type-directed stdin/stdout stream channels, regex conduits, and evacuability-polymorphic aggregation
+synopsis: Stream channels, regex conduits, and evacuable aggregation
 description:
-  Type-directed stdin/stdout stream channels, regex conduits, and evacuability-polymorphic aggregation for the tengri ecosystem.
+  Stream channels, regex conduits, and evacuable aggregation for the tengri ecosystem.
 license: EUPL-1.2
 license-file: LICENSE
 author: Nadia Yvette Chambers
