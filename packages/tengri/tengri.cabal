@@ -1,0 +1,53 @@
+cabal-version: 3.0
+name: tengri
+version: 0.1.0.0
+synopsis: Unified CLI and interactive REPL surface for the Tengri constellation
+description:
+  Unified CLI and interactive REPL surface for the Tengri constellation for the tengri ecosystem.
+license: EUPL-1.2
+license-file: LICENSE
+author: Nadia Yvette Chambers
+maintainer: nadia.yvette.chambers@ik.me
+category: Development
+homepage: https://github.com/NadiaYvette/tengri
+bug-reports: https://github.com/NadiaYvette/tengri/issues
+extra-doc-files:
+  README.md
+  CHANGELOG.md
+build-type: Simple
+tested-with: GHC == 9.10.1
+
+source-repository head
+  type: git
+  location: https://github.com/NadiaYvette/tengri
+  subdir: packages/tengri
+
+library
+  exposed-modules:
+    Tengri
+  hs-source-dirs: src
+  default-language: Haskell2010
+  default-extensions:
+    OverloadedStrings
+    DerivingStrategies
+  ghc-options: -Wall -Wcompat -Wredundant-constraints
+  build-depends:
+    base >= 4.14 && < 5,
+    text >= 2.0 && < 2.2,
+    containers >= 0.6 && < 0.9
+
+test-suite tests
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  hs-source-dirs: test
+  default-language: Haskell2010
+  default-extensions:
+    OverloadedStrings
+    DerivingStrategies
+  ghc-options: -Wall -Wcompat -Wredundant-constraints -threaded -rtsopts "-with-rtsopts=-N"
+  build-depends:
+    base >= 4.14 && < 5,
+    tengri,
+    text >= 2.0 && < 2.2,
+    containers >= 0.6 && < 0.9,
+    hspec >= 2.10 && < 2.12

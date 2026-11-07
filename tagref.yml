@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: EUPL-1.2
+# Tagref configuration for tengri
+
+ignore_rules:
+  - "bin/tengri-tagref"
+  - ".githooks"
