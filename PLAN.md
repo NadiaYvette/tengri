@@ -11,5 +11,8 @@
 
 - [x] **Milestone 1.1:** Canonical Workspace Scaffolding
   - Multi-package hierarchy, documentation corpus, and verification harnesses grounded.
-- [ ] **Milestone 1.2:** Core Implementation & Domain Logic
-  - Core abstractions, unit tests, and property test verification.
+- [x] **Milestone 1.2:** Core Implementation & Domain Logic
+  - `tengri-sulde` and `tengri-lus` foundational conduits implemented (`TP-TENGRI-002`).
+  - `tengri-darkhan` abductive spine and arity articulation engine implemented with DPO rules (`TP-TENGRI-003`).
+- [ ] **Milestone 1.3:** Warm GHC Daemon & Repl Runtime (`tengri-savdag`)
+  - Warm daemon integration and persistent GHC evaluation pipeline (`TP-TENGRI-004`).
