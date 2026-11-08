@@ -1026,7 +1026,3 @@ echo "=== [4/5] Updating repository tags ==="
 ./bin/tengri-tagref || true
 
 echo "=== [5/5] Scaffold complete ==="
-EOF
-
-chmod +x scripts/tasks/TP-TENGRI-004.sh
-chmod +x scripts/tasks/TP-TENGRI-004-verify.sh
