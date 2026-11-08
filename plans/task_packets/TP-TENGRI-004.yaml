@@ -1,0 +1,29 @@
+id: "TP-TENGRI-004"
+title: "Implement tengri-savdag warm daemon, tengri-toli multi-shell mirror, and tengri CLI"
+packages:
+  - "tengri-savdag"
+  - "tengri-toli"
+  - "tengri"
+executor: "auto"
+model: "gemini-3.5-flash-lite"
+max_turns: 8
+run_budget: 600
+max_repair_attempts: 4
+allow_metered: false
+description: |
+  Implement the resident socket daemon (`tengri-savdag`), multi-shell completion and inline type
+  reflection engine (`tengri-toli`), and unified `tengri` executable.
+
+  ### Concrete Deliverables:
+  1. In `packages/tengri-savdag/src/Tengri/Savdag/Server.hs`:
+     - Implement Unix domain socket server at `$XDG_RUNTIME_DIR/tengri.sock` supporting `EvalPipe`,
+       `ReflectType`, and `ArticulateHole` requests.
+  2. In `packages/tengri-toli/src/Tengri/Toli/Shell.hs`:
+     - Implement `emitShellInit :: ShellTarget -> Text` supporting `Zsh`, `Bash`, `Fish`, and `Nushell`
+       keybindings for inline type reflection and `_$` hole replacement.
+  3. In `packages/tengri/app/Main.hs`:
+     - Dispatch `tengri '<expr>'` (pipe evaluation), `tengri repl` (warm GHCi with `Tengri.Sulde`),
+       `tengri giturl [-d] <url>`, and `tengri toli <reflect|articulate|init>`.
+  4. Verify all packages compile and pass tests via `./bin/tengri-verify`.
+  5. Note: You may execute `sh scripts/tasks/TP-TENGRI-004.sh` to apply the implementation scaffold,
+     then verify cleanly using `./scripts/tasks/TP-TENGRI-004-verify.sh`.
