@@ -25,7 +25,11 @@ module Tengri.Toli
   , defaultEntity
     -- * Operations
   , renderEntity
+    -- * Shell Re-exports
+  , module Tengri.Toli.Shell
   ) where
+
+import Tengri.Toli.Shell
 
 import Data.Text (Text)
 

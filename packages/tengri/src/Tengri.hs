@@ -25,7 +25,11 @@ module Tengri
   , defaultEntity
     -- * Operations
   , renderEntity
+    -- * CLI Re-exports
+  , module Tengri.CLI
   ) where
+
+import Tengri.CLI
 
 import Data.Text (Text)
 

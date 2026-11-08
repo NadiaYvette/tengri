@@ -25,7 +25,11 @@ module Tengri.Savdag
   , defaultEntity
     -- * Operations
   , renderEntity
+    -- * Server Re-exports
+  , module Tengri.Savdag.Server
   ) where
+
+import Tengri.Savdag.Server
 
 import Data.Text (Text)
 

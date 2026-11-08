@@ -25,6 +25,7 @@ source-repository head
 library
   exposed-modules:
     Tengri.Toli
+    Tengri.Toli.Shell
   hs-source-dirs: src
   default-language: Haskell2010
   default-extensions:

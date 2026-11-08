@@ -25,6 +25,7 @@ source-repository head
 library
   exposed-modules:
     Tengri
+    Tengri.CLI
   hs-source-dirs: src
   default-language: Haskell2010
   default-extensions:
@@ -34,7 +35,26 @@ library
   build-depends:
     base >= 4.14 && < 5,
     text >= 2.0 && < 2.2,
-    containers >= 0.6 && < 0.9
+    containers >= 0.6 && < 0.9,
+    directory >= 1.3 && < 1.4,
+    process >= 1.6 && < 1.7,
+    tengri-savdag,
+    tengri-toli,
+    tengri-sulde,
+    tengri-darkhan
+
+executable tengri
+  main-is: Main.hs
+  hs-source-dirs: app
+  default-language: Haskell2010
+  default-extensions:
+    OverloadedStrings
+    DerivingStrategies
+  ghc-options: -Wall -Wcompat -Wredundant-constraints
+  build-depends:
+    base >= 4.14 && < 5,
+    tengri,
+    text >= 2.0 && < 2.2
 
 test-suite tests
   type: exitcode-stdio-1.0
@@ -48,6 +68,8 @@ test-suite tests
   build-depends:
     base >= 4.14 && < 5,
     tengri,
+    tengri-savdag,
+    tengri-toli,
     text >= 2.0 && < 2.2,
     containers >= 0.6 && < 0.9,
     hspec >= 2.10 && < 2.12
