@@ -25,6 +25,7 @@ source-repository head
 library
   exposed-modules:
     Tengri.Darkhan
+    Tengri.Darkhan.Articulate
   hs-source-dirs: src
   default-language: Haskell2010
   default-extensions:
@@ -33,8 +34,14 @@ library
   ghc-options: -Wall -Wcompat -Wredundant-constraints
   build-depends:
     base >= 4.14 && < 5,
-    text >= 2.0 && < 2.2,
-    containers >= 0.6 && < 0.9
+    text >= 2.0 && < 3,
+    containers >= 0.6 && < 0.9,
+    gongju,
+    polytropos-core,
+    witherable >= 0.4 && < 0.6,
+    gargamelle-core,
+    gargamelle-fol,
+    gargamelle-equational
 
 test-suite tests
   type: exitcode-stdio-1.0
@@ -48,6 +55,12 @@ test-suite tests
   build-depends:
     base >= 4.14 && < 5,
     tengri-darkhan,
-    text >= 2.0 && < 2.2,
+    text >= 2.0 && < 3,
     containers >= 0.6 && < 0.9,
-    hspec >= 2.10 && < 2.12
+    hspec >= 2.10 && < 2.12,
+    gongju,
+    polytropos-core,
+    witherable >= 0.4 && < 0.6,
+    gargamelle-core,
+    gargamelle-fol,
+    gargamelle-equational

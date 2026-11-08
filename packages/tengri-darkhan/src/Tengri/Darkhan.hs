@@ -25,7 +25,11 @@ module Tengri.Darkhan
   , defaultEntity
     -- * Operations
   , renderEntity
+    -- * Articulation Engine Re-exports
+  , module Tengri.Darkhan.Articulate
   ) where
+
+import Tengri.Darkhan.Articulate
 
 import Data.Text (Text)
 
