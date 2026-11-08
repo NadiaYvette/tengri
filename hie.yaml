@@ -1,0 +1,7 @@
+# HLS cradle for tengri — GHC 9.14.1 (see cabal.project with-compiler)
+# HLS 2.15.0.0 provides haskell-language-server-9.14.1 (ghcup set hls 2.15.0.0).
+# Use the per-GHC wrapper in ~/.ghcup/bin/ — the plain wrapper may select
+# a different GHC outside this project.
+cradle:
+  cabal:
+    component: lib:tengri
