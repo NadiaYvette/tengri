@@ -20,6 +20,8 @@ Pointer file. Canonical sources win on any disagreement.
 - [`.agents/rules/code-navigation.md`](.agents/rules/code-navigation.md) — Token-saving funnel (`./tags` symbol jump, targeted slice viewing).
 - [`.agents/rules/compiler-verification.md`](.agents/rules/compiler-verification.md) — Zero-log compiler verification, tests, and zero-contamination.
 - [`.agents/rules/documentation-precedence.md`](.agents/rules/documentation-precedence.md) — Precedence rule ("code wins at runtime; notes corrected regardless").
+- [`.agents/rules/kioku-context.md`](.agents/rules/kioku-context.md) — Durable memory, context offloading loop (`kioku-remember`), and compaction cadence.
+- [`.agents/rules/task-execution.md`](.agents/rules/task-execution.md) — Yamaarashi runner invariants, `executor: auto` preference, and zero-polling discipline.
 
 ## Subdivided operational skills (`.agents/skills/`)
 
