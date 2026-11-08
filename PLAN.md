@@ -14,5 +14,6 @@
 - [x] **Milestone 1.2:** Core Implementation & Domain Logic
   - `tengri-sulde` and `tengri-lus` foundational conduits implemented (`TP-TENGRI-002`).
   - `tengri-darkhan` abductive spine and arity articulation engine implemented with DPO rules (`TP-TENGRI-003`).
-- [ ] **Milestone 1.3:** Warm GHC Daemon & Repl Runtime (`tengri-savdag`)
+- [x] **Milestone 1.3:** Warm GHC Daemon & Repl Runtime (`tengri-savdag`)
   - Warm daemon integration and persistent GHC evaluation pipeline (`TP-TENGRI-004`).
+  - Multi-shell type reflection mirror (`tengri-toli`) and unified CLI dispatch (`tengri`).
