@@ -1,0 +1,26 @@
+id: "TP-TENGRI-003"
+title: "Implement Tengri.Darkhan.Articulate wired to Gargamelle LiquidHyperdoctrine and AbductiveEGraph"
+packages:
+  - "tengri-darkhan"
+executor: "auto"
+model: "gemini-3.5-flash-lite"
+max_turns: 8
+run_budget: 600
+max_repair_attempts: 4
+allow_metered: false
+description: |
+  Implement `Tengri.Darkhan.Articulate` in `tengri-darkhan`, connecting `Gargamelle.FOL.LiquidHyperdoctrine`
+  (`TP-002D`) and `Gargamelle.Equational.AbductiveEGraph` (`TP-003C`) to synthesize minimal-cost
+  `gongju`, `Witherable`, and `Polytropos` spine bridges between mismatched expression types.
+
+  ### Concrete Deliverables:
+  1. In `packages/tengri-darkhan/src/Tengri/Darkhan/Articulate.hs`:
+     - Export `SpineBridge(..)`, `buildDarkhanSig`, `darkhanDPORules`, and `articulateBridge`.
+     - Encode DPO rules for `darkhan_fmap_mapMaybe`, `darkhan_bind_wither`, `darkhan_gongju_fmapN`,
+       `darkhan_gongju_spineFor`, and `darkhan_polytropos_rcast`.
+  2. In `packages/tengri-darkhan/test/Main.hs`:
+     - Add test verifying that articulating `NonEmpty.nonEmpty` (pure `meas_effect == 0`, `meas_maybe == 1`)
+       against `IO [[Text]]` selects `Wither.mapMaybe` over `Wither.wither` with cost 2.
+     - Verify with `cabal v2-build tengri-darkhan && cabal v2-test tengri-darkhan`.
+   3. Note: You may execute `sh scripts/tasks/TP-TENGRI-003.sh` to apply the implementation scaffold,
+      then verify cleanly using `cabal v2-test tengri-darkhan`.
