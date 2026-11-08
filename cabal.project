@@ -7,3 +7,27 @@ allow-newer: *
 package *
   ghc-options: -Wall -Wcompat -Wredundant-constraints
   haddock-options: -w
+
+source-repository-package
+  type: git
+  location: https://github.com/NadiaYvette/polytropos
+  tag: 0.1.0.3
+  subdir: packages/polytropos-core
+
+source-repository-package
+  type: git
+  location: https://github.com/NadiaYvette/polytropos
+  tag: 0.1.0.3
+  subdir: packages/polytropos-plugin
+
+source-repository-package
+  type: git
+  location: https://github.com/NadiaYvette/penelope
+  tag: 0.1.0.0
+  subdir: packages/penelope-core
+
+source-repository-package
+  type: git
+  location: https://github.com/NadiaYvette/penelope
+  tag: 0.1.0.0
+  subdir: packages/penelope-effects
