@@ -1,0 +1,17 @@
+# Tricorder — tengri
+# Target only tengri's own libraries. Without this, tricorder auto-detects
+# every .cabal file reachable via cabal.project.local's `packages:` list
+# (gongju, polytropos, penelope, proarrow, gargamelle, ...) and tries to
+# open a repl for their test suites — which fails: those packages are
+# pinned `tests: False` in cabal.project.local (enabling them breaks the
+# whole solver plan), so tricorder dies with Cabal-7076 / Stopped.
+# Explicit targets + no test targets keeps the daemon on tengri itself.
+session:
+  targets:
+    - lib:tengri
+    - lib:tengri-darkhan
+    - lib:tengri-lus
+    - lib:tengri-savdag
+    - lib:tengri-sulde
+    - lib:tengri-toli
+  test_targets: []
