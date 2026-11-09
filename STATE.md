@@ -14,3 +14,6 @@ Operational frontier. Read with [`PLAN.md`](PLAN.md); update before ending a ses
 
 - Complete Phase 1 integration verification and ground Phase 2 roadmap tasks.
 - Maintain 5-gate physical verification via `./bin/tengri-verify`.
+- Tricorder fixed (2026-11-09): `.tricorder.yaml` scopes the session to the six tengri libs with `test_targets: []` (commit `5f679f1`); redundant `Hyperdoctrine` constraints dropped in `gargamelle-equational` (`5fee5cf`). Daemon reports Finished, 11 modules, 0 diagnostics.
+- Open: tengri has no git remote — commits `731a4c0` and `5f679f1` are local-only, push pending user-provided remote URL.
+- Open: open-kioku has no Haskell support (no tree-sitter grammar/colourizer); adding it needs a code patch + rebuild in `~/src/open-kioku` or SCIP indexing.
