@@ -6,16 +6,42 @@ user-invocable: true
 
 # Checking Build Status with Tricorder
 
-Using `tricorder` slashes token burn by >95%: instead of dumping 300+ lines of raw GHC build logs into context (~2,500 tokens), it returns machine-readable JSON diagnostics in <50 tokens.
+[`tricorder`](file:///home/nyc/src/tricorder/) maintains a continuous background GHCi daemon that compiles packages in the `cabal.project` workspace incrementally.
 
-## 1. CLI Invocation Fallback
+Using `tricorder` slashes token burn by >95%: instead of dumping 300+ lines of raw GHC build logs into context (~2,500 tokens), it returns machine-readable JSON diagnostics in $<50$ tokens.
+
+## 1. Using the MCP Server (`tricorder-mcp`)
+
+If the assistant environment supports Model Context Protocol (configured via [`.mcp.json`](../../.mcp.json) or [`.agents/mcp.json`](../mcp.json)):
+
+- **`status`**: Query current compiler errors, warnings, and diagnostics. Pass `wait: true` to block until in-progress compilation finishes.
+- **`test_results`**: Query the latest test execution results. Pass `failed: true` to see only failing suites.
+- **`source`**: Retrieve Haskell source for installed or dependency modules (e.g. `Polytropos.Core`).
+
+## 2. CLI Invocation Fallback
+
+When querying via Bash:
+
 ```bash
+# Query machine-readable compiler errors and warnings in JSON (<50 tokens)
 tricorder status --json
+
+# Block until current incremental compilation finishes
 tricorder status --wait --json
+
+# Inspect dependency module source code directly from disk
+tricorder source <Module.Name>
 ```
 
-## 2. Standard Compilation Fallback
+## 3. Tier 0 POSIX Fallback (When Daemon is Not Running)
+
+If the background daemon is not running and you want a non-intrusive compilation check:
+
 ```bash
+# Verify dependency plans without rebuilding everything
+cabal build all --dry-run
+
+# Standard compilation fallback
 cabal build all
 cabal test all
 ```

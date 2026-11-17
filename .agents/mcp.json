@@ -24,7 +24,7 @@
       "command": "gopls"
     },
     "dhall-lsp-server": {
-      "command": "/home/nyc/src/dhall-haskell/dist-newstyle/build/x86_64-linux/ghc-9.14.1/dhall-lsp-server-1.1.4/x/dhall-lsp-server/build/dhall-lsp-server/dhall-lsp-server"
+      "command": "dhall-lsp-server"
     }
   }
 }
