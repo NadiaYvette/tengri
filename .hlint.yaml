@@ -7,8 +7,6 @@
     - -XTypeOperators
     - -XTypeApplications
 
-- ignore: {name: "Use camelCase"}
-
 - warn:
     name: "Use OverloadedRecordDot"
     lhs: "getField @a x"

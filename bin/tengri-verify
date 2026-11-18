@@ -23,7 +23,7 @@ verify_hlint() {
 
 verify_tests() {
   echo "=== [2/5] Full Cabal Test Suite ==="
-  (cd "${REPO_ROOT}" && cabal test all -j20 --semaphore >/dev/null)
+  (cd "${REPO_ROOT}" && cabal test all >/dev/null)
   echo "  [+] All test suite assertions PASSED."
 }
 

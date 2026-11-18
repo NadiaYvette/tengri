@@ -20,9 +20,4 @@ Welcome to the `tengri` technical documentation corpus.
 
 ## Active Packages
 
-- [`packages/tengri-sulde/`](../packages/tengri-sulde/) — Precompiled algebraic prelude re-exporting gongju, polytropos, and total pattern peelers
-- [`packages/tengri-lus/`](../packages/tengri-lus/) — Type-directed stdin/stdout stream channels, regex conduits, and evacuability-polymorphic aggregation
-- [`packages/tengri-darkhan/`](../packages/tengri-darkhan/) — Abductive spine and arity bridge synthesizer powered by Gargamelle and Gongju
-- [`packages/tengri-savdag/`](../packages/tengri-savdag/) — Persistent warm GHC API daemon with SCM_RIGHTS file-descriptor passing and MCP introspection
-- [`packages/tengri-toli/`](../packages/tengri-toli/) — Multi-shell completion, inline type reflection mirror, and Core inspection lens
-- [`packages/tengri/`](../packages/tengri/) — Unified CLI and interactive REPL surface for the Tengri constellation
+- [`packages/tengri/`](../packages/tengri/) — Foundational package for tengri

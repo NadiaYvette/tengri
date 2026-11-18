@@ -4,7 +4,7 @@ Pointer file. Canonical sources win on any disagreement.
 
 ## What this repository is
 
-`tengri` — Replaces evalhs and ldpkgs with a warm GHC daemon (tengri-savdag), abductive spine articulation (tengri-darkhan), precompiled algebraic prelude (tengri-sulde), stream/pipe automation (tengri-lus), and multi-shell type reflection (tengri-toli).
+`tengri` — Ecosystem workspace for tengri
 
 ## Read first, in this order
 
@@ -20,20 +20,6 @@ Pointer file. Canonical sources win on any disagreement.
 - [`.agents/rules/code-navigation.md`](.agents/rules/code-navigation.md) — Token-saving funnel (`./tags` symbol jump, targeted slice viewing).
 - [`.agents/rules/compiler-verification.md`](.agents/rules/compiler-verification.md) — Zero-log compiler verification, tests, and zero-contamination.
 - [`.agents/rules/documentation-precedence.md`](.agents/rules/documentation-precedence.md) — Precedence rule ("code wins at runtime; notes corrected regardless").
-- [`.agents/rules/hls-housekeeping.md`](.agents/rules/hls-housekeeping.md) — Zero-token mechanical code repairs via `hls-autoheal`.
-- [`.agents/rules/kioku-context.md`](.agents/rules/kioku-context.md) — Durable memory, context offloading loop (`kioku-remember`), and compaction cadence.
-- [`.agents/rules/plugin-invariants.md`](.agents/rules/plugin-invariants.md) — TcPlugin literal index evidence and Core AST dictionary synthesis.
-- [`.agents/rules/task-execution.md`](.agents/rules/task-execution.md) — Yamaarashi runner invariants, `executor: auto` preference, and zero-polling discipline.
-
-## Subdivided operational skills (`.agents/skills/`)
-
-- [`.agents/skills/code-navigation/SKILL.md`](.agents/skills/code-navigation/SKILL.md) — Fast, token-efficient code navigation using tags, ripgrep, and ast-grep.
-- [`.agents/skills/contextful/SKILL.md`](.agents/skills/contextful/SKILL.md) — Query project context packs, local FTS5 BM25 search.
-- [`.agents/skills/kioku/SKILL.md`](.agents/skills/kioku/SKILL.md) — Durable agent memory and hybrid recall via shinzui kioku.
-- [`.agents/skills/ponytail/SKILL.md`](.agents/skills/ponytail/SKILL.md) — Minimalist / YAGNI / lazy-mode coding.
-- [`.agents/skills/shikumi/SKILL.md`](.agents/skills/shikumi/SKILL.md) — Typed language-model programs & hierarchical tracing.
-- [`.agents/skills/tricorder/SKILL.md`](.agents/skills/tricorder/SKILL.md) — Check continuous GHCi build status and zero-log compiler diagnostics.
-- [`.agents/skills/yamaarashi/SKILL.md`](.agents/skills/yamaarashi/SKILL.md) — Autonomous task packet runner and ASCII Kanban board projection.
 
 ## Operational advisories
 
