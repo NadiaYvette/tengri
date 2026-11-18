@@ -3,10 +3,12 @@
 module Main (main) where
 
 import Test.Hspec
+import qualified SmirkSpec
 import Tengri
 
 main :: IO ()
 main = hspec $ parallel $ do
+  SmirkSpec.spec
   describe "Tengri" $ do
     it "constructs default entity with correct properties" $ do
       let e = defaultEntity

@@ -27,9 +27,12 @@ module Tengri
   , renderEntity
     -- * CLI Re-exports
   , module Tengri.CLI
+    -- * Smirk & Penelope Bridge Re-exports
+  , module Tengri.Smirk
   ) where
 
 import Tengri.CLI
+import Tengri.Smirk
 
 import Data.Text (Text)
 
