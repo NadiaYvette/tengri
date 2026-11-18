@@ -35,8 +35,14 @@ let project : Schema.Project
             , { name = "tengri-savdag"
               , synopsis = "Warm GHC API daemon with SCM_RIGHTS and MCP introspection"
               }
+            , { name = "tengri-ulgen"
+              , synopsis = "Warm GhcMonad evaluation worker with mock ModSummary source plugin pipeline"
+              }
             , { name = "tengri-toli"
               , synopsis = "Multi-shell completion, inline type reflection mirror, and Core inspection lens"
+              }
+            , { name = "tengri-zsh-preexec"
+              , synopsis = "Zsh preexec hook preprocessor"
               }
             , { name = "tengri"
               , synopsis = "Unified CLI and interactive REPL surface for the Tengri constellation"

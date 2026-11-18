@@ -1,0 +1,74 @@
+cabal-version: 3.0
+name: tengri-ulgen
+version: 0.1.0.0
+synopsis: Warm GhcMonad evaluation worker with mock ModSummary source plugin pipeline
+description:
+  Hosts warm GHC evaluation sessions using an isolated GhcMonad runner,
+  synthesizing mock ModSummary environments to execute source plugins
+  (such as polytropos-plugin) on interactive prompt expressions and statements.
+license: EUPL-1.2
+license-file: LICENSE
+author: Nadia Yvette Chambers
+maintainer: nadia.yvette.chambers@ik.me
+category: Development
+homepage: https://github.com/NadiaYvette/tengri
+bug-reports: https://github.com/NadiaYvette/tengri/issues
+extra-doc-files:
+  README.md
+  CHANGELOG.md
+build-type: Simple
+tested-with: GHC == 9.10.1, GHC == 9.14.1
+
+source-repository head
+  type: git
+  location: https://github.com/NadiaYvette/tengri
+  subdir: packages/tengri-ulgen
+
+library
+  exposed-modules:
+    Tengri.Ulgen
+    Tengri.Ulgen.Monad
+    Tengri.Ulgen.MockSummary
+    Tengri.Ulgen.Plugin
+    Tengri.Ulgen.Worker
+  hs-source-dirs: src
+  default-language: Haskell2010
+  default-extensions:
+    OverloadedStrings
+    DerivingStrategies
+    ScopedTypeVariables
+    RecordWildCards
+    PatternSynonyms
+  ghc-options: -Wall -Wcompat -Wredundant-constraints
+  build-depends:
+    base >= 4.14 && < 5,
+    text >= 2.0 && < 2.2,
+    containers >= 0.6 && < 0.9,
+    directory >= 1.3 && < 1.4,
+    filepath >= 1.4 && < 1.6,
+    time >= 1.9 && < 1.16,
+    exceptions >= 0.10 && < 0.11,
+    ghc >= 9.10 && < 9.16,
+    ghc-boot-th >= 9.10 && < 9.16,
+    ghci >= 9.10 && < 9.16,
+    polytropos-core >= 0.1.1.0 && < 0.2,
+    polytropos-plugin >= 0.1.1.0 && < 0.2
+
+test-suite tests
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  hs-source-dirs: test
+  default-language: Haskell2010
+  default-extensions:
+    OverloadedStrings
+    DerivingStrategies
+    ScopedTypeVariables
+  ghc-options: -Wall -Wcompat -Wredundant-constraints -threaded -rtsopts "-with-rtsopts=-N"
+  build-depends:
+    base >= 4.14 && < 5,
+    tengri-ulgen,
+    text >= 2.0 && < 2.2,
+    containers >= 0.6 && < 0.9,
+    directory >= 1.3 && < 1.4,
+    filepath >= 1.4 && < 1.6,
+    hspec >= 2.10 && < 2.12

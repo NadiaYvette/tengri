@@ -36,12 +36,12 @@ library
     base >= 4.14 && < 5,
     text >= 2.0 && < 3,
     containers >= 0.6 && < 0.9,
-    gongju,
-    polytropos-core,
+    gongju >= 0.1 && < 0.2,
+    polytropos-core >= 0.1.1.0 && < 0.2,
     witherable >= 0.4 && < 0.6,
-    gargamelle-core,
-    gargamelle-fol,
-    gargamelle-equational
+    gargamelle-core >= 0.1 && < 0.2,
+    gargamelle-fol >= 0.1 && < 0.2,
+    gargamelle-equational >= 0.1 && < 0.2
 
 test-suite tests
   type: exitcode-stdio-1.0
@@ -58,9 +58,9 @@ test-suite tests
     text >= 2.0 && < 3,
     containers >= 0.6 && < 0.9,
     hspec >= 2.10 && < 2.12,
-    gongju,
-    polytropos-core,
+    gongju >= 0.1 && < 0.2,
+    polytropos-core >= 0.1.1.0 && < 0.2,
     witherable >= 0.4 && < 0.6,
-    gargamelle-core,
-    gargamelle-fol,
-    gargamelle-equational
+    gargamelle-core >= 0.1 && < 0.2,
+    gargamelle-fol >= 0.1 && < 0.2,
+    gargamelle-equational >= 0.1 && < 0.2

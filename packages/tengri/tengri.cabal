@@ -39,12 +39,12 @@ library
     containers >= 0.6 && < 0.9,
     directory >= 1.3 && < 1.4,
     process >= 1.6 && < 1.7,
-    tengri-savdag,
-    tengri-toli,
-    tengri-sulde,
-    tengri-darkhan,
-    smirk,
-    smirk-penelope
+    tengri-savdag >= 0.1 && < 0.2,
+    tengri-toli >= 0.1 && < 0.2,
+    tengri-sulde >= 0.1 && < 0.2,
+    tengri-darkhan >= 0.1 && < 0.2,
+    smirk >= 0.1 && < 0.2,
+    smirk-penelope >= 0.1 && < 0.2
 
 executable tengri
   main-is: Main.hs

@@ -1,14 +1,14 @@
 module Main (main) where
-import "polytropos" Polytropos
-import "polytropos" Polytropos.Core
-import "polytropos" Polytropos.Lens
-import "polytropos" Polytropos.Optics
-import "penelope" Penelope.Core
-import "penelope" Penelope.Effects
+import "polytropos-core" Polytropos
+import "polytropos-core" Polytropos.Core
+import "polytropos-lens" Polytropos.Lens
+import "polytropos-optics" Polytropos.Optics
+import "penelope-core" Penelope.Core
+import "penelope-effects" Penelope.Effects
 import "gongju" Gongju
 import "smirk" Smirk
 import "smirk" Smirk.Glob
-import "smirk" Smirk.Effect.Penelope
+import "smirk-penelope" Smirk.Effect.Penelope
 
 import "pointed" Data.Pointed
 import "base" System.Environment

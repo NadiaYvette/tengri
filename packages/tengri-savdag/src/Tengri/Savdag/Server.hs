@@ -35,12 +35,15 @@ module Tengri.Savdag.Server
   , renderResponse
     -- * Request Handling
   , handleRequest
+  , handleRequestWithWorker
   ) where
 
 import Data.Text (Text)
 import qualified Data.Text as T
 import System.Environment (lookupEnv)
 import System.FilePath ((</>))
+
+import Tengri.Ulgen (UlgenWorker, evalInWorker, reflectInWorker)
 
 -- | Represents a client request dispatched to the 'tengri-savdag' daemon.
 --
@@ -135,4 +138,22 @@ handleRequest (ReflectType expr) = do
   pure $ ReflectResult $ "forall a. a -> " <> expr
 handleRequest (ArticulateHole hole) = do
   -- Articulation dispatch for hole synthesis
+  pure $ ArticulateResult $ "Wither.mapMaybe (" <> hole <> ")"
+
+-- | Dispatches an incoming 'Request' through an active resident 'UlgenWorker'.
+--
+-- Delegates expression evaluation and type reflection directly to the warm
+-- 'GhcMonad' session hosted by the worker.
+handleRequestWithWorker :: UlgenWorker -> Request -> IO Response
+handleRequestWithWorker worker (EvalPipe expr) = do
+  res <- evalInWorker worker expr
+  pure $ case res of
+    Right out -> EvalResult out
+    Left err  -> ErrorResult err
+handleRequestWithWorker worker (ReflectType expr) = do
+  res <- reflectInWorker worker expr
+  pure $ case res of
+    Right ty  -> ReflectResult ty
+    Left err  -> ErrorResult err
+handleRequestWithWorker _ (ArticulateHole hole) = do
   pure $ ArticulateResult $ "Wither.mapMaybe (" <> hole <> ")"
