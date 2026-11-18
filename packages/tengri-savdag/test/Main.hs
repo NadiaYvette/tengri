@@ -66,7 +66,7 @@ main = hspec $ parallel $ do
 
   describe "Tengri.Savdag.Monad" $ do
     it "provides valid default configuration" $ do
-      savdagImports defaultSavdagConfig `shouldBe` ["Prelude"]
+      savdagImports defaultSavdagConfig `shouldBe` ["Prelude", "Tengri.Sulde", "Polytropos", "GHC.TypeNats"]
       case savdagLibDir defaultSavdagConfig of
         Just p  -> p `shouldSatisfy` (not . null)
         Nothing -> expectationFailure "Expected Just libdir"

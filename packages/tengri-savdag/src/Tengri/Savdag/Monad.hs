@@ -71,25 +71,34 @@ import qualified Control.Exception as E
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC
-  ( DynFlags
+  ( DynFlags(..)
   , Ghc
   , InteractiveImport(..)
   , exprType
+  , getLogger
   , getSession
   , getSessionDynFlags
   , handleSourceError
+  , interpretPackageEnv
   , mkModuleName
   , runGhc
   , setContext
+  , setInteractiveDynFlags
   , setSessionDynFlags
   , simpleImportDecl
   )
 import GHC.Types.SourceError (SourceError)
 import GHC.Tc.Module (TcRnExprMode(TM_Inst))
-import GHC.Driver.DynFlags (xopt_set)
+import GHC.Driver.DynFlags
+  ( xopt_set
+  , PackageFlag(..)
+  , PackageArg(..)
+  , ModRenaming(..)
+  )
 import GHC.LanguageExtensions.Type (Extension(..))
 import qualified GHC.Paths
 import GHC.Runtime.Eval (compileExpr)
+import GHC.Runtime.Loader (initializeSessionPlugins)
 import GHC.Utils.Outputable (ppr, showSDocUnsafe)
 import qualified Polytropos.Plugin
 import Tengri.Savdag.Plugin (desugarInteractiveSnippet)
@@ -131,7 +140,7 @@ data SavdagConfig = SavdagConfig
 defaultSavdagConfig :: SavdagConfig
 defaultSavdagConfig = SavdagConfig
   { savdagLibDir     = Just GHC.Paths.libdir
-  , savdagImports    = ["Prelude"]
+  , savdagImports    = ["Prelude", "Tengri.Sulde", "Polytropos", "GHC.TypeNats"]
   , savdagExtensions = [ExtendedDefaultRules, OverloadedRecordDot, DataKinds, TypeApplications, OverloadedStrings, OverloadedLabels]
   }
 
@@ -152,9 +161,19 @@ runSavdag cfg act = runGhc (savdagLibDir cfg) $ do
 initSavdagSession :: SavdagConfig -> SavdagM ()
 initSavdagSession cfg = do
   df0 <- getSessionDynFlags
+  logger <- getLogger
+  df1 <- liftIO $ interpretPackageEnv logger df0
   -- Enable configured language extensions
-  let df1 = foldr enableExtension df0 (savdagExtensions cfg)
-  setSessionDynFlags df1
+  let df2 = foldr enableExtension df1 (savdagExtensions cfg)
+      exposePkg name = ExposePackage ("-package " ++ name) (PackageArg name) (ModRenaming True [])
+      pkgsToExpose = ["tengri-sulde", "polytropos-core", "polytropos-plugin"]
+      df3 = df2
+        { packageFlags = map exposePkg pkgsToExpose ++ packageFlags df2
+        , pluginModNames = mkModuleName "Polytropos.Plugin" : pluginModNames df2
+        }
+  setSessionDynFlags df3
+  setInteractiveDynFlags df3
+  initializeSessionPlugins
   -- Configure default imports in the interactive evaluation context
   let iDecls = map (IIDecl . simpleImportDecl . mkModuleName) (savdagImports cfg)
   setContext iDecls

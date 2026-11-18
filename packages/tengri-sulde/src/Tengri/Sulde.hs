@@ -64,10 +64,14 @@ module Tengri.Sulde
   ( -- * Re-exported Core Facades
     module Gongju
   , module Polytropos
+  , module Polytropos.MergeMorph
   , module Witherable
   , module Penelope.Core
   , module Penelope.Effects
   , module Tengri.Sulde.GitUrl
+
+  , KnownNat
+  , Nat
 
     -- * Total Variant Peeling Combinators
   , peelJust
@@ -85,12 +89,14 @@ import Data.Kind (Type)
 import Data.Proxy (Proxy (..))
 import Data.Text (Text)
 import GHC.TypeLits (Symbol)
+import GHC.TypeNats (KnownNat, Nat)
 
 import Gongju
 import Penelope.Core
 import Penelope.Effects hiding (Entity (..), defaultEntity, renderEntity)
 import Polytropos
-import Polytropos.Core (ConstructorIndex (..), SumRowHKD)
+import Polytropos.Core (SumRowHKD)
+import Polytropos.MergeMorph
 import Tengri.Sulde.GitUrl
 import Witherable (Filterable (..), Witherable (..))
 

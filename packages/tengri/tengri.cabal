@@ -4,7 +4,7 @@ version: 0.1.0.0
 synopsis: Unified CLI and interactive REPL surface for the Tengri constellation
 description:
   Unified CLI and interactive REPL surface for the Tengri constellation for the tengri ecosystem.
-license: EUPL-1.2
+license: EUPL-1.2 OR Apache-2.0
 license-file: LICENSE
 author: Nadia Yvette Chambers
 maintainer: nadia.yvette.chambers@ik.me

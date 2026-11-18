@@ -4,7 +4,7 @@ version: 0.1.0.0
 synopsis: Multi-shell completion, inline type reflection mirror, and Core inspection lens
 description:
   Multi-shell completion, inline type reflection mirror, and Core inspection lens for the tengri ecosystem.
-license: EUPL-1.2
+license: EUPL-1.2 OR Apache-2.0
 license-file: LICENSE
 author: Nadia Yvette Chambers
 maintainer: nadia.yvette.chambers@ik.me

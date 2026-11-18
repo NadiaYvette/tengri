@@ -4,7 +4,7 @@ version: 0.1.0.0
 synopsis: Precompiled algebraic prelude re-exporting gongju and polytropos
 description:
   Precompiled algebraic prelude re-exporting gongju, polytropos, and penelope for the tengri ecosystem.
-license: EUPL-1.2
+license: EUPL-1.2 OR Apache-2.0
 license-file: LICENSE
 author: Nadia Yvette Chambers
 maintainer: nadia.yvette.chambers@ik.me
