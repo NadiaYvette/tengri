@@ -12,3 +12,5 @@
     lhs: "getField @a x"
     rhs: "x.a"
     note: "Prefer native OverloadedRecordDot syntax over explicit getField"
+
+- ignore: {name: "Use camelCase"}
