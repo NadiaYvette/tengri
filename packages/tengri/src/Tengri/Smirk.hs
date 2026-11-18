@@ -43,7 +43,6 @@ import qualified Data.Text as T
 
 import Smirk.Glob.Zsh
   ( FileInfo (..)
-  , FileType (..)
   , filterFilesByZshGlob
   , parseZshGlob
   )
