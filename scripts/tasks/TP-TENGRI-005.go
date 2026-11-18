@@ -88,7 +88,7 @@ func main() {
 			"  hs-source-dirs: test\n",
 			"  hs-source-dirs: test\n  other-modules:\n    SmirkSpec\n", 1)
 	}
-	if !strings.Contains(cabalStr, "smirk,") && strings.Contains(cabalStr, "hspec >= 2.10 && < 2.12\n") {
+	if !strings.Contains(cabalStr, "hspec >= 2.10 && < 2.12,\n    smirk") && strings.Contains(cabalStr, "hspec >= 2.10 && < 2.12\n") {
 		cabalStr = strings.Replace(cabalStr,
 			"    hspec >= 2.10 && < 2.12\n",
 			"    hspec >= 2.10 && < 2.12,\n    smirk,\n    smirk-penelope\n", 1)
