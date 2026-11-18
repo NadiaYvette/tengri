@@ -43,7 +43,7 @@ import qualified Data.Text as T
 import System.Environment (lookupEnv)
 import System.FilePath ((</>))
 
-import Tengri.Ulgen (UlgenWorker, evalInWorker, reflectInWorker)
+import Tengri.Savdag.Worker (SavdagWorker, evalInWorker, reflectInWorker)
 
 -- | Represents a client request dispatched to the 'tengri-savdag' daemon.
 --
@@ -140,11 +140,11 @@ handleRequest (ArticulateHole hole) = do
   -- Articulation dispatch for hole synthesis
   pure $ ArticulateResult $ "Wither.mapMaybe (" <> hole <> ")"
 
--- | Dispatches an incoming 'Request' through an active resident 'UlgenWorker'.
+-- | Dispatches an incoming 'Request' through an active resident 'SavdagWorker'.
 --
 -- Delegates expression evaluation and type reflection directly to the warm
 -- 'GhcMonad' session hosted by the worker.
-handleRequestWithWorker :: UlgenWorker -> Request -> IO Response
+handleRequestWithWorker :: SavdagWorker -> Request -> IO Response
 handleRequestWithWorker worker (EvalPipe expr) = do
   res <- evalInWorker worker expr
   pure $ case res of

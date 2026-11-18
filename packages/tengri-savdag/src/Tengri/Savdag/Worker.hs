@@ -1,8 +1,8 @@
--- | Module: Tengri.Ulgen.Worker
+-- | Module: Tengri.Savdag.Worker
 -- Description: Isolated thread/process worker for warm GHC evaluation sessions
 --
 -- This module implements a dedicated background worker thread hosting a resident
--- 'UlgenM' session. By isolating GHC evaluation in a dedicated thread communicating
+-- 'SavdagM' session. By isolating GHC evaluation in a dedicated thread communicating
 -- over thread-safe channels, the host daemon ('tengri-savdag') and shell interfaces
 -- remain responsive, resilient against evaluation aborts, and protected from
 -- runtime crashes.
@@ -26,17 +26,17 @@
 --
 -- = Worked Example
 --
--- >>> worker <- startUlgenWorker defaultUlgenConfig
+-- >>> worker <- startSavdagWorker defaultSavdagConfig
 -- >>> reflectInWorker worker "1 + 1 :: Int"
 -- Right "Int"
--- >>> stopUlgenWorker worker
-module Tengri.Ulgen.Worker
+-- >>> stopSavdagWorker worker
+module Tengri.Savdag.Worker
   ( -- * Worker Handle & Types
-    UlgenWorker(..)
-  , UlgenRequest(..)
+    SavdagWorker(..)
+  , SavdagRequest(..)
     -- * Lifecycle Operations
-  , startUlgenWorker
-  , stopUlgenWorker
+  , startSavdagWorker
+  , stopSavdagWorker
     -- * Worker Dispatch Operations
   , evalInWorker
   , reflectInWorker
@@ -56,7 +56,6 @@ import Control.Concurrent
   , writeChan
   )
 import Control.Concurrent.MVar (MVar)
-import Control.Exception (SomeException, catch)
 import Control.Monad (forever)
 import Control.Monad.IO.Class (MonadIO(..))
 import Data.Text (Text)
@@ -64,19 +63,19 @@ import qualified Data.Text as T
 import GHC (getSession)
 
 import Polytropos.Plugin (plugin)
-import Tengri.Ulgen.Monad
-  ( UlgenConfig
-  , UlgenM
-  , evalUlgenExpr
-  , reflectUlgenType
-  , runUlgen
+import Tengri.Savdag.Monad
+  ( SavdagConfig
+  , SavdagM
+  , evalSavdagExpr
+  , reflectSavdagType
+  , runSavdag
   )
-import Tengri.Ulgen.Plugin
+import Tengri.Savdag.Plugin
   ( desugarInteractiveModule
   )
 
--- | Represents a request dispatched to the background Ulgen worker.
-data UlgenRequest
+-- | Represents a request dispatched to the background Savdag worker.
+data SavdagRequest
   = ReqEval !Text !(MVar (Either Text Text))
     -- ^ Evaluate an expression string and return textual output.
   | ReqReflect !Text !(MVar (Either Text Text))
@@ -86,22 +85,22 @@ data UlgenRequest
   | ReqStop
     -- ^ Terminate the worker loop cleanly.
 
--- | Handle to an active, resident background Ulgen worker session.
+-- | Handle to an active, resident background Savdag worker session.
 --
--- The worker maintains an isolated, warm 'UlgenM' session running inside a dedicated
+-- The worker maintains an isolated, warm 'SavdagM' session running inside a dedicated
 -- OS thread ('workerThreadId'). All interactions are funneled through 'workerReqChan',
 -- ensuring sequential, thread-safe access to GHC's internal 'HscEnv' compiler state
 -- without risking race conditions or concurrent symbol table corruption.
-data UlgenWorker = UlgenWorker
-  { workerReqChan  :: !(Chan UlgenRequest)
+data SavdagWorker = SavdagWorker
+  { workerReqChan  :: !(Chan SavdagRequest)
     -- ^ Channel delivering incoming evaluation and reflection requests.
   , workerThreadId :: !ThreadId
     -- ^ Thread identifier of the background worker thread.
   }
 
--- | Launches a new resident Ulgen worker in a dedicated background thread.
+-- | Launches a new resident Savdag worker in a dedicated background thread.
 --
--- Initializes the warm GHC session with the supplied 'UlgenConfig' and begins
+-- Initializes the warm GHC session with the supplied 'SavdagConfig' and begins
 -- processing requests from 'workerReqChan'.
 --
 -- Guarantees:
@@ -109,57 +108,75 @@ data UlgenWorker = UlgenWorker
 -- * The compiler session is initialized strictly once on thread startup.
 -- * Subsequent requests incur zero package database traversal overhead.
 -- * Request errors are caught and surfaced without tearing down the worker thread.
-startUlgenWorker :: UlgenConfig -> IO UlgenWorker
-startUlgenWorker cfg = do
+startSavdagWorker :: SavdagConfig -> IO SavdagWorker
+startSavdagWorker cfg = do
   chan <- newChan
-  tid  <- forkIO $ runUlgen cfg (workerLoop chan)
-  pure $ UlgenWorker
+  tid  <- forkIO $ runSavdag cfg (workerLoop chan)
+  pure $ SavdagWorker
     { workerReqChan  = chan
     , workerThreadId = tid
     }
 
 -- | Internal request dispatch loop running inside the worker thread.
-workerLoop :: Chan UlgenRequest -> Tengri.Ulgen.Monad.UlgenM ()
+workerLoop :: Chan SavdagRequest -> Tengri.Savdag.Monad.SavdagM ()
 workerLoop chan = forever $ do
   req <- liftIO $ readChan chan
   case req of
     ReqEval expr mvar -> do
-      res <- evalUlgenExpr (T.unpack expr)
+      res <- evalSavdagExpr (T.unpack expr)
       liftIO $ putMVar mvar res
     ReqReflect expr mvar -> do
-      res <- reflectUlgenType (T.unpack expr)
+      res <- reflectSavdagType (T.unpack expr)
       liftIO $ putMVar mvar res
-    ReqDesugar snippet mvar -> do
-      env <- getSession
-      res <- desugarInteractiveModule env plugin snippet
+    ReqDesugar expr mvar -> do
+      env <- GHC.getSession
+      res <- liftIO $ desugarInteractiveModule env Polytropos.Plugin.plugin expr
       liftIO $ putMVar mvar res
     ReqStop -> do
-      -- Exit the worker loop cleanly
-      liftIO $ putStrLn "[tengri-ulgen] Worker session terminated."
+      pure ()
 
--- | Evaluates an expression within the warm worker session.
-evalInWorker :: UlgenWorker -> Text -> IO (Either Text Text)
+-- | Evaluates an expression through the background worker.
+--
+-- Parameters:
+--
+-- * @worker@: Active worker handle.
+-- * @expr@: Expression text to evaluate.
+evalInWorker :: SavdagWorker -> Text -> IO (Either Text Text)
 evalInWorker worker expr = do
   mvar <- newEmptyMVar
   writeChan (workerReqChan worker) (ReqEval expr mvar)
   takeMVar mvar
 
--- | Reflects the static Haskell type of an expression within the warm worker session.
-reflectInWorker :: UlgenWorker -> Text -> IO (Either Text Text)
+-- | Reflects the type of an expression through the background worker.
+--
+-- Parameters:
+--
+-- * @worker@: Active worker handle.
+-- * @expr@: Expression text whose type is to be reflected.
+reflectInWorker :: SavdagWorker -> Text -> IO (Either Text Text)
 reflectInWorker worker expr = do
   mvar <- newEmptyMVar
   writeChan (workerReqChan worker) (ReqReflect expr mvar)
   takeMVar mvar
 
--- | Desugars an interactive snippet through source plugins via mock ModSummary.
-desugarInWorker :: UlgenWorker -> Text -> IO (Either Text Text)
-desugarInWorker worker snippet = do
+-- | Desugars an expression using source plugins through the background worker.
+--
+-- Parameters:
+--
+-- * @worker@: Active worker handle.
+-- * @expr@: Raw expression text containing syntactic sugar (e.g. @REC { ... }@).
+desugarInWorker :: SavdagWorker -> Text -> IO (Either Text Text)
+desugarInWorker worker expr = do
   mvar <- newEmptyMVar
-  writeChan (workerReqChan worker) (ReqDesugar snippet mvar)
+  writeChan (workerReqChan worker) (ReqDesugar expr mvar)
   takeMVar mvar
 
--- | Shuts down the background worker thread.
-stopUlgenWorker :: UlgenWorker -> IO ()
-stopUlgenWorker worker = do
+-- | Stops and terminates the background Savdag worker thread cleanly.
+--
+-- Parameters:
+--
+-- * @worker@: Worker handle to stop.
+stopSavdagWorker :: SavdagWorker -> IO ()
+stopSavdagWorker worker = do
   writeChan (workerReqChan worker) ReqStop
-  killThread (workerThreadId worker) `catch` (\(_ :: SomeException) -> pure ())
+  killThread (workerThreadId worker)

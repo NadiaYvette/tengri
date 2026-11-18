@@ -55,3 +55,24 @@ main = hspec $ parallel $ do
     it "dispatches ArticulateHole request" $ do
       res <- handleRequest (ArticulateHole "_$")
       res `shouldBe` ArticulateResult "Wither.mapMaybe (_$)"
+
+  describe "Tengri.Savdag.MockSummary" $ do
+    it "constructs mock ModSummary snippet with expected module name" $ do
+      let snippet = wrapExpressionSnippet "42"
+      T.isInfixOf "module Tengri.Interactive where" snippet `shouldBe` True
+      T.isInfixOf "it = 42" snippet `shouldBe` True
+
+  describe "Tengri.Savdag.Monad" $ do
+    it "provides valid default configuration" $ do
+      savdagImports defaultSavdagConfig `shouldBe` ["Prelude"]
+      case savdagLibDir defaultSavdagConfig of
+        Just p  -> p `shouldSatisfy` (\path -> not (null path))
+        Nothing -> expectationFailure "Expected Just libdir"
+
+  describe "Tengri.Savdag.Plugin" $ do
+    it "wraps expression snippets into well-formed module text" $ do
+      let wrapped = wrapExpressionSnippet "REC { a = 1, b = 2 }"
+      T.lines wrapped `shouldBe`
+        [ "module Tengri.Interactive where"
+        , "it = REC { a = 1, b = 2 }"
+        ]

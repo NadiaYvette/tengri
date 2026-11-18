@@ -56,16 +56,15 @@ The physical verification harness [`bin/tengri-verify`](../bin/tengri-verify) ex
 
 ## 3. Package Structure & Inter-Package Dependencies
 
-The workspace comprises eight packages arranged in three architectural tiers:
+The workspace comprises six packages arranged in three architectural tiers:
 
 ```
 [Tier 3: User Surface]
   tengri (CLI & REPL) ───┐
                          ▼
-[Tier 2: Infrastructure & Interception]
-  tengri-savdag (Daemon) ──► tengri-ulgen (GhcMonad & Plugins)
-  tengri-zsh-preexec (Shell Hook)
-  tengri-toli (Type Mirror & Core Lens)
+[Tier 2: Infrastructure & Reflection]
+  tengri-savdag (Daemon, GhcMonad Worker & Mock ModSummary)
+  tengri-toli (Type Mirror, Core Lens & ZLE accept-line Generator)
                          │
                          ▼
 [Tier 1: Foundations & Combinators]
@@ -95,9 +94,9 @@ The daemon socket defaults to `/tmp/tengri-$UID.sock`. If the socket becomes orp
 rm -f /tmp/tengri-*.sock
 ```
 
-### 2. Thread Safety in `tengri-ulgen`
-The `UlgenWorker` manages GHC API state within a dedicated OS thread. Because GHC's runtime environment contains thread-local and global state in `HscEnv`:
-- All interaction with `GhcMonad` must funnel through the worker's `Chan UlgenRequest`.
+### 2. Thread Safety in `tengri-savdag` Worker
+The `SavdagWorker` manages GHC API state within a dedicated OS thread. Because GHC's runtime environment contains thread-local and global state in `HscEnv`:
+- All interaction with `GhcMonad` must funnel through the worker's `Chan SavdagRequest`.
 - Never invoke GHC API functions concurrently from multiple OS threads without isolated `HscEnv` contexts.
 - Handle expression exceptions using GHC's `handleSourceError` rather than crashing the worker thread.
 

@@ -113,6 +113,8 @@ emitShellInit Nushell = emitNushellInit
 --    and displays the inferred type in the mini-buffer status line via 'zle -M'.
 -- 2. '_tengri_articulate': Bound to '^X^A'. Searches for hole token '_$' in '$BUFFER',
 --    queries 'tengri toli articulate', and substitutes the suggested expression in-place.
+-- 3. '_tengri_accept_line': Intercepts prompt lines via ZLE 'accept-line' widget, rewriting
+--    commands starting with '=' or 'hs ' into 'tengri' evaluation invocations before execution.
 emitZshInit :: Text
 emitZshInit = T.unlines
   [ "# Tengri Zsh Integration"
@@ -137,6 +139,17 @@ emitZshInit = T.unlines
   , "}"
   , "zle -N _tengri_articulate"
   , "bindkey '^X^A' _tengri_articulate"
+  , ""
+  , "# ZLE accept-line prompt interception"
+  , "_tengri_accept_line() {"
+  , "  if [[ \"$BUFFER\" == =* ]]; then"
+  , "    BUFFER=\"tengri ${BUFFER#=}\""
+  , "  elif [[ \"$BUFFER\" == \"hs \"* ]]; then"
+  , "    BUFFER=\"tengri ${BUFFER#hs }\""
+  , "  fi"
+  , "  zle .accept-line"
+  , "}"
+  , "zle -N accept-line _tengri_accept_line"
   ]
 
 -- | Emits Bash integration script with GNU Readline hooks.

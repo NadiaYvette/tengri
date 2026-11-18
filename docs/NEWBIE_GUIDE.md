@@ -31,7 +31,7 @@ Furthermore, standard GHCi bypasses source plugins during interactive prompt ent
 
 **Tengri flips this paradigm:**
 - A long-running daemon (`tengri-savdag`) holds an initialized GHC runtime environment in memory.
-- In-memory evaluation sessions (`tengri-ulgen`) wrap bare prompt inputs into synthetic compilation units, attaching mock `ModSummary` buffers (`ms_hspp_buf`).
+- In-memory evaluation sessions inside `tengri-savdag` wrap bare prompt inputs into synthetic compilation units, attaching mock `ModSummary` buffers (`ms_hspp_buf`).
 - Source plugins (`Polytropos.Plugin`) execute normally, desugaring custom syntax before typechecking.
 - Sub-millisecond evaluation latency is achieved across POSIX shell pipes and interactive REPL sessions.
 
@@ -58,20 +58,18 @@ Examine [`docs/INDEX.md`](INDEX.md) and [tengri.dhall](../tengri.dhall) to locat
 
 ### Level 1: Package Topology
 Locate the specific package under `packages/`:
-- `packages/tengri-savdag/`: Unix domain socket daemon, supervisor, and process management.
-- `packages/tengri-ulgen/`: Resident `GhcMonad` worker, mock `ModSummary` builder, and plugin runner.
+- `packages/tengri-savdag/`: Unix domain socket daemon, resident `GhcMonad` worker, mock `ModSummary` pipeline.
 - `packages/tengri-sulde/`: Precompiled algebraic prelude.
 - `packages/tengri-lus/`: Stream pipes, regex conduits, and aggregators.
 - `packages/tengri-darkhan/`: Abductive spine synthesis and arity bridge synthesis.
-- `packages/tengri-toli/`: Shamanic mirror (type reflection, shell completion, Core inspection).
-- `packages/tengri-zsh-preexec/`: Intercept hooks for Zsh.
+- `packages/tengri-toli/`: Shamanic mirror (type reflection, shell completion, Core inspection, ZLE accept-line).
 - `packages/tengri/`: User-facing CLI binary.
 
 ### Level 2: Tag Navigation & Ast-Grep
 Use `tags` or ripgrep to locate specific type signatures and functions without loading whole files:
 ```bash
-# Locate function definition in tengri-ulgen
-rg "mkMockModSummary" packages/tengri-ulgen/
+# Locate function definition in tengri-savdag
+rg "mkMockModSummary" packages/tengri-savdag/
 ```
 
 ### Level 3: Surgical Inspection
@@ -87,28 +85,26 @@ Read only the relevant function block using line ranges:
 | Package | Etymology & Meaning | Core Role |
 |:---|:---|:---|
 | `tengri` | *Möngke Tengri* (The Eternal Blue Sky) | Unified CLI frontend & interactive REPL |
-| `tengri-savdag` | *Savdag* (Earth/Place Master Spirits) | Resident Unix domain socket daemon |
-| `tengri-ulgen` | *Ülgen* (Creator of Speech & Mind) | In-memory `GhcMonad` evaluator & plugin driver |
+| `tengri-savdag` | *Savdag* (Earth/Place Master Spirits) | Resident Unix domain socket daemon & warm GHC API engine |
 | `tengri-sulde` | *Sülde* (Celestial Vital Soul & Banner) | Algebraic prelude (`gongju`, `polytropos`) |
 | `tengri-lus` | *Lus* (Water Spirits of Deep Conduits) | Stream pipelines and conduit transformers |
 | `tengri-darkhan` | *Darkhan* (Sacred Heavenly Smith) | Abductive spine and arity bridge articulation |
-| `tengri-toli` | *Toli* (Shamanic Bronze Mirror) | Inferred type reflection & GHC Core lens |
-| `tengri-zsh-preexec` | Shamanic Boundary Gate | Zsh prompt interception hook |
+| `tengri-toli` | *Toli* (Shamanic Bronze Mirror) | Inferred type reflection, GHC Core lens & ZLE widget generator |
 
 ---
 
 ## 4. Common Gotchas & Architectural Invariants
 
 ### Gotcha 1: Static vs Dynamic Linking of GHC API
-- **Invariant:** When building packages that depend directly on the `ghc` package (`tengri-ulgen`, `tengri-savdag`), linking the executable against the static GHC archive (`libHSghc-*.a`) requires significant linking time (60–120s with GNU `ld.bfd`).
+- **Invariant:** When building packages that depend directly on the `ghc` package (`tengri-savdag`), linking the executable against the static GHC archive (`libHSghc-*.a`) requires significant linking time (60–120s with GNU `ld.bfd`).
 - **Remedy:** Do not interrupt the linker; during development, verify typecheck via `cabal build --ghc-options="-fno-code"` or `cabal check` for instant feedback.
 
 ### Gotcha 2: Daemon State Isolation
-- **Invariant:** `tengri-savdag` maintains an active session worker (`UlgenWorker`). State modifications (e.g. `let x = 1`) persist across prompt evaluations within the same session.
+- **Invariant:** `tengri-savdag` maintains an active session worker (`SavdagWorker`). State modifications (e.g. `let x = 1`) persist across prompt evaluations within the same session.
 - **Remedy:** Use `tengri session reset` or restart the daemon (`tengri daemon restart`) if the interactive environment enters a polluted or divergent state.
 
 ### Gotcha 3: The Mock `ModSummary` Buffer
-- **Invariant:** In `tengri-ulgen`, `mkMockModSummary` attaches an in-memory `StringBuffer` (`ms_hspp_buf`) so `hscParse` never attempts to read from the filesystem.
+- **Invariant:** In `tengri-savdag`, `mkMockModSummary` attaches an in-memory `StringBuffer` (`ms_hspp_buf`) so `hscParse` never attempts to read from the filesystem.
 - **Rule:** Never point `ms_hspp_buf` to `Nothing` when parsing synthetic snippets, otherwise GHC will attempt to stat and read dummy file paths on disk.
 
 ---
@@ -119,10 +115,10 @@ Always run verification before committing changes:
 
 ```bash
 # Run unit tests for a single package
-cabal test tengri-ulgen
+cabal test tengri-savdag
 
 # Validate package manifest for Hackage compliance
-cd packages/tengri-ulgen && cabal check
+cd packages/tengri-savdag && cabal check
 
 # Run full repository verification suite
 ./bin/tengri-verify

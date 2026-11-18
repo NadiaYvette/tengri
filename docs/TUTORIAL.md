@@ -31,8 +31,8 @@ Furthermore, standard GHCi suffers from a critical architectural limitation: **i
 
 **Tengri** eliminates both problems:
 1. **Zero Cold-Start Overhead:** A warm, resident background daemon (`tengri-savdag`) holds initialized GHC runtime state, compiled package databases, and preloaded module environments in memory.
-2. **First-Class Interactive Source Plugins:** Via `tengri-ulgen`, prompt expressions are wrapped into synthetic in-memory compilation units backed by mock `ModSummary` structures (`ms_hspp_buf`). Full source plugin passes (`parsedResultAction`) execute seamlessly, lowering syntactic sugar before typechecking and evaluation.
-3. **Sub-Millisecond Shell Interception:** High-performance Zsh preexec integration (`tengri-zsh-preexec`) intercepts Haskell expressions in shell pipelines and delegates them over Unix domain sockets with zero disk I/O.
+2. **First-Class Interactive Source Plugins:** Inside `tengri-savdag`, prompt expressions are wrapped into synthetic in-memory compilation units backed by mock `ModSummary` structures (`ms_hspp_buf`). Full source plugin passes (`parsedResultAction`) execute seamlessly, lowering syntactic sugar before typechecking and evaluation.
+3. **Sub-Millisecond Shell Interception:** High-performance Zsh ZLE integration via `accept-line` widget intercepts Haskell expressions in shell pipelines and delegates them over Unix domain sockets with zero disk I/O.
 
 ---
 
@@ -43,13 +43,11 @@ Tengri takes its name and structural taxonomy from classical Turko-Mongol celest
 | Package | Mythological Archetype | Engineering Responsibility |
 |:---|:---|:---|
 | **`tengri`** | *Möngke Tengri* (Мөнх Тэнгэр) — The Eternal Blue Sky, supreme cosmic canopy governing all phenomena | Unified CLI frontend, shell launcher, and interactive REPL entry point. |
-| **`tengri-savdag`** | *Savdag* (Савдаг) — The master spirits of local ground and place | Warm background GHC daemon process supervising compilation state and IPC sockets. |
-| **`tengri-ulgen`** | *Ülgen* (Үлгэн) — Celestial creator of speech, intellect, thought, and sacred fire | Resident `GhcMonad` evaluator thread executing in-memory mock `ModSummary` source plugin pipelines. |
+| **`tengri-savdag`** | *Savdag* (Савдаг) — The master spirits of local ground and place | Warm background GHC daemon process supervising compilation state, resident `GhcMonad` worker, mock `ModSummary` desugaring, and IPC sockets. |
 | **`tengri-sulde`** | *Sülde* (Сүлд) — The vital soul and celestial destiny residing in the warrior's spearhead | Precompiled algebraic prelude re-exporting core combinators (`gongju`, `polytropos`). |
 | **`tengri-lus`** | *Lus* (Луус) — The water spirits, masters of underground conduits and currents | Stream channels, conduits, lazy I/O evacuation, and regex aggregation pipelines. |
 | **`tengri-darkhan`** | *Darkhan* (Дархан) — The sacred master smith endowed by heaven to forge iron and steel | Abductive spine synthesis and arity bridge articulation powered by `gargamelle` and `gongju`. |
-| **`tengri-toli`** | *Toli* (Толь) — The shamanic bronze mirror reflecting invisible spiritual essences | Multi-shell completion, inline type reflection mirror, and GHC Core AST lens. |
-| **`tengri-zsh-preexec`** | Boundary Shaman | C-level and binary preexec hook intercepting terminal inputs before standard execution. |
+| **`tengri-toli`** | *Toli* (Толь) — The shamanic bronze mirror reflecting invisible spiritual essences | Multi-shell completion, inline type reflection mirror, GHC Core AST lens, and ZLE `accept-line` widget emission. |
 
 ---
 
@@ -60,27 +58,24 @@ The following diagram illustrates how an interactive expression with custom synt
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as Shell / REPL
-    participant Hook as tengri-zsh-preexec
+    actor User as Shell (ZLE accept-line)
     participant Daemon as tengri-savdag (Daemon)
-    participant Worker as tengri-ulgen (Worker Thread)
+    participant Worker as SavdagWorker (Worker Thread)
     participant Plugin as Polytropos.Plugin
     participant GHC as In-Memory GhcMonad
 
-    User->>Hook: Type "REC { x = 1, y = True }"
-    Hook->>Daemon: Unix Domain Socket Request (SCM_RIGHTS)
-    Daemon->>Worker: Enqueue UlgenRequest via Chan
+    User->>Daemon: Type "= REC { x = 1, y = True }" -> IPC Request
+    Daemon->>Worker: Enqueue SavdagRequest via Chan
     Note over Worker: Wrap bare expression into synthetic snippet:<br/>module Tengri.Interactive where<br/>it = REC { x = 1, y = True }
     Worker->>Worker: Instantiate mock ModSummary (ms_hspp_buf)
     Worker->>Worker: In-memory hscParse (stringToStringBuffer)
     Worker->>Plugin: parsedResultAction(HsParsedModule)
     Note over Plugin: Lower REC { ... } to:<br/>Polytropos.insertField #x 1<br/>  (Polytropos.insertField #y True Polytropos.emptyRecord)
     Plugin-->>Worker: Transformed HsParsedModule + injected imports
-    Worker->>GHC: Typecheck & Compile (UlgenM)
+    Worker->>GHC: Typecheck & Compile (SavdagM)
     GHC-->>Worker: Value Representation / Inferred Type
     Worker-->>Daemon: MVar Response
-    Daemon-->>Hook: Return Result (< 5ms)
-    Hook-->>User: Display Formatted Output
+    Daemon-->>User: Return Result (< 5ms)
 ```
 
 ---
@@ -114,7 +109,7 @@ tengri eval "runGongju $ pure 42"
 
 ### 4.3 First-Class Row-Polymorphic Record Desugaring
 
-Standard GHCi cannot parse `REC { ... }` because GHC prompt statements bypass source plugins. With `tengri-ulgen`, the expression is dynamically wrapped in a synthetic module, transformed via `Polytropos.Plugin`, and evaluated:
+Standard GHCi cannot parse `REC { ... }` because GHC prompt statements bypass source plugins. With `tengri-savdag`'s in-memory mock `ModSummary` pipeline, the expression is dynamically wrapped in a synthetic module, transformed via `Polytropos.Plugin`, and evaluated:
 
 ```bash
 # Evaluate row-polymorphic record syntax directly

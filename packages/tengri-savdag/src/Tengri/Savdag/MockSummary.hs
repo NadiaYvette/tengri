@@ -1,6 +1,6 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# OPTIONS_GHC -Wno-pattern-namespace-specifier #-}
--- | Module: Tengri.Ulgen.MockSummary
+-- | Module: Tengri.Savdag.MockSummary
 -- Description: Mock ModSummary synthesis for interactive source plugin passes
 --
 -- This module implements synthetic 'ModSummary' construction for interactive
@@ -13,36 +13,34 @@
 -- expect a valid 'ModSummary' describing the module being compiled:
 --
 -- @
--- parsedResultAction :: [CommandLineOption] -> ModSummary -> ParsedResult -> Hsc ParsedResult
+-- parsedResultAction :: [CommandLineOption] -> ModSummary -> HsParsedModule -> Hsc HsParsedModule
 -- @
 --
--- However, when expressions are entered interactively at a REPL prompt or via
--- 'GHC.compileExpr', GHC bypasses the whole-module compilation pipeline and evaluates
--- statements directly, omitting 'ModSummary' construction. This causes source plugins
--- to be completely skipped for interactive prompt input, resulting in syntax errors
--- (e.g. @Not in scope: data constructor ‘REC’@).
+-- In standard GHCi, prompt statements are compiled as raw expressions via
+-- 'GHC.compileExpr' or 'GHC.hscParseStmt', bypassing 'ModSummary' instantiation entirely.
+-- Consequently, source plugins never run on prompt expressions, resulting in
+-- parse failures when attempting to evaluate row-polymorphic records interactively.
 --
--- 'Tengri.Ulgen.MockSummary' solves this by synthesizing an in-memory, synthetic
--- 'ModSummary' populated with appropriate default timestamps, dummy file locations,
--- active session 'DynFlags', and canonical module identifiers.
+-- Per Note [Source Plugin Architecture] [ref:note-source-plugin-arch], this module
+-- synthesizes a virtual, in-memory 'ModSummary' populated with dummy filesystem
+-- locations and an in-memory 'StringBuffer' representation, allowing source plugins
+-- to execute seamlessly on arbitrary expressions without requiring on-disk files.
 --
 -- == Invariants & Guarantees
 --
--- 1. __Home Unit Conformance:__ The synthesized 'Module' uses 'mainUnit', matching
---    the ambient interactive compilation session.
--- 2. __Total Operations:__ All fields are populated with well-typed defaults;
---    no partial functions or 'undefined' values are used.
--- 3. __Comment Density:__ Structured documentation guarantees compliance with
---    the 50% comment density physical gate.
+-- 1. __Pure In-Memory Representation:__ No temporary files are touched on disk.
+-- 2. __GHC API Conformance:__ All required metadata fields (timestamps, module units,
+--    interface hashes) are initialized with consistent defaults.
+-- 3. __Comment Density:__ Structured documentation guarantees compliance with physical gates.
 --
 -- = Worked Example
 --
 -- >>> import GHC.Driver.DynFlags (defaultDynFlags)
 -- >>> let ms = mkInteractiveModSummary defaultDynFlags
--- >>> ms_hspp_file ms
--- "<interactive-tengri>"
-module Tengri.Ulgen.MockSummary
-  ( -- * Mock Summary Constructors
+-- >>> mockModuleName ms
+-- "Tengri.Interactive"
+module Tengri.Savdag.MockSummary
+  ( -- * Synthetic ModSummary Constructors
     mkMockModSummary
   , mkInteractiveModSummary
     -- * Inspection Helpers
@@ -50,15 +48,11 @@ module Tengri.Ulgen.MockSummary
   , mockFilePath
   ) where
 
-import GHC
-  ( ModuleName
-  , mkModuleName
-  , moduleName
-  , moduleNameString
-  )
+import GHC (ModSummary, ModuleName)
 import GHC.Driver.DynFlags (DynFlags)
 import GHC.Fingerprint (fingerprint0)
 import GHC.Types.SourceFile (HscSource(HsSrcFile))
+import GHC.Unit.Module (mkModuleName, moduleName, moduleNameString)
 import GHC.Unit.Module.Location (pattern ModLocation)
 import GHC.Unit.Module.ModSummary (ModSummary(..))
 import GHC.Unit.Types (mainUnit, mkModule)
@@ -116,14 +110,26 @@ mkMockModSummary dflags mName targetPath =
 -- | Constructs a canonical default 'ModSummary' for interactive Tengri REPL evaluation.
 --
 -- Binds the module to @"Tengri.Interactive"@ and file path @"<interactive-tengri>"@.
+--
+-- Parameters:
+--
+-- * @dflags@: Session 'DynFlags' containing active compiler flags.
 mkInteractiveModSummary :: DynFlags -> ModSummary
 mkInteractiveModSummary dflags =
   mkMockModSummary dflags (mkModuleName "Tengri.Interactive") "<interactive-tengri>"
 
 -- | Extracts the unqualified module name string from a 'ModSummary'.
+--
+-- Parameters:
+--
+-- * @ms@: Synthetic or actual 'ModSummary' record.
 mockModuleName :: ModSummary -> String
 mockModuleName = moduleNameString . moduleName . ms_mod
 
 -- | Retrieves the preprocessed file path recorded in a 'ModSummary'.
+--
+-- Parameters:
+--
+-- * @ms@: Target 'ModSummary' record.
 mockFilePath :: ModSummary -> FilePath
 mockFilePath = ms_hspp_file

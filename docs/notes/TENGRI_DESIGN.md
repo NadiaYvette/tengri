@@ -16,7 +16,7 @@ Interactive command-line shells and rapid experimentation workflows demand near-
 1. **The Cold Process Startup Tax:** Every invocation of `ghc -e` or fresh `ghci` incurs heavy OS process spawning, dynamic linker resolution, package database parsing, and compiler state reconstruction, taking between 800ms and 2,500ms.
 2. **The GHCi Source Plugin Blind Spot:** Standard GHCi parses prompt statements via `hscParseStmt` directly into `GhciLStmt GhcPs`. Because interactive statements do not constitute a full compilation unit, GHC's compilation pipeline does not instantiate a module summary (`ModSummary`). As a direct consequence, **source plugins (`Plugin.parsedResultAction`) are completely bypassed during interactive expression evaluation**. Syntactic extensions such as `Polytropos.Plugin`'s desugaring of row-polymorphic record literals (`REC { ... }`) fail to resolve.
 
-**Tengri** provides an architectural solution to both challenges by combining a warm, resident GHC supervisor daemon (`tengri-savdag`) with an in-memory `GhcMonad` evaluation pipeline (`tengri-ulgen`) that synthesizes mock `ModSummary` compilation units with in-memory string buffers (`ms_hspp_buf`).
+**Tengri** provides an architectural solution to both challenges by combining a warm, resident GHC supervisor daemon (`tengri-savdag`) with an in-memory `GhcMonad` evaluation pipeline that synthesizes mock `ModSummary` compilation units with in-memory string buffers (`ms_hspp_buf`).
 
 ---
 
@@ -30,14 +30,14 @@ Defines the foundational invariants for `tengri`:
 
 1. **In-Memory Compilation Units:** Synthetic expressions are wrapped into virtual modules (`module Tengri.Interactive where it = <expr>`) with dummy source locations and in-memory `StringBuffer` representations. No temporary files touch the filesystem.
 2. **Pre-Typecheck Plugin Lowering:** The in-memory parsed AST (`HsParsedModule`) is routed through `Polytropos.Plugin.Source.sourcePlugin`, desugaring `REC { ... }` records into chained `Polytropos.insertField` calls and inserting necessary qualified imports before `typecheckModule` executes.
-3. **Session Concurrency & State Threading:** Interactive GHC API interactions are funneled through a single dedicated worker thread (`UlgenWorker`) communicating via asynchronous channels (`Chan UlgenRequest`) and synchronizing on rendezvous MVars (`MVar (Either String a)`).
-4. **Daemon Inter-Process Communication:** Communication between shell hooks (`tengri-zsh-preexec`), the CLI (`tengri`), and the daemon (`tengri-savdag`) occurs exclusively over POSIX Unix domain sockets using length-prefixed framing and optional `SCM_RIGHTS` descriptor passing.
+3. **Session Concurrency & State Threading:** Interactive GHC API interactions are funneled through a single dedicated worker thread (`SavdagWorker`) communicating via asynchronous channels (`Chan SavdagRequest`) and synchronizing on rendezvous MVars (`MVar (Either String a)`).
+4. **Daemon Inter-Process Communication:** Communication between shell hooks (ZLE `accept-line`), the CLI (`tengri`), and the daemon (`tengri-savdag`) occurs exclusively over POSIX Unix domain sockets using length-prefixed framing and optional `SCM_RIGHTS` descriptor passing.
 
 ### Note [Source Plugin Architecture]
 
 [tag:note-source-plugin-arch]
 
-Defines the interactive expression wrapper and synthetic in-memory AST pipeline for `tengri-ulgen`. Bare prompt strings are framed in synthetic module envelopes before source plugin passes execute.
+Defines the interactive expression wrapper and synthetic in-memory AST pipeline for `tengri-savdag`. Bare prompt strings are framed in synthetic module envelopes before source plugin passes execute.
 
 ---
 
@@ -45,7 +45,7 @@ Defines the interactive expression wrapper and synthetic in-memory AST pipeline 
 
 ### Decision D1: Modular Workspace Architecture
 
-The repository is partitioned into eight focused packages under `packages/`:
+The repository is partitioned into six focused packages under `packages/`:
 
 ```
                     ┌─────────────────────────┐
@@ -55,14 +55,10 @@ The repository is partitioned into eight focused packages under `packages/`:
          ┌───────────────────────┴───────────────────────┐
          ▼                                               ▼
 ┌──────────────────┐                           ┌──────────────────┐
-│  tengri-savdag   │                           │ tengri-zsh-preexec│
-│  (Warm Daemon)   │                           │ (Shell Intercept)│
+│  tengri-savdag   │                           │   tengri-toli    │
+│  (Warm Daemon &  │                           │ (Reflection &    │
+│  Mock ModSummary)│                           │ ZLE accept-line) │
 └────────┬─────────┘                           └──────────────────┘
-         │
-         ▼
-┌──────────────────┐
-│   tengri-ulgen   │ ◄─── (Mock ModSummary & Source Plugins)
-└────────┬─────────┘
          │
     ┌────┴─────────────────────────────┐
     ▼                                  ▼
@@ -79,25 +75,24 @@ The repository is partitioned into eight focused packages under `packages/`:
              └──────────────────┘
 ```
 
-**Rationale:** Decoupling the daemon (`tengri-savdag`), the evaluator (`tengri-ulgen`), and the algebraic combinators (`tengri-sulde`, `tengri-lus`) ensures that CLI clients and shell hooks remain lightweight ($< 2\text{MB}$) while the heavy GHC runtime remains isolated within long-lived server processes.
+**Rationale:** Decoupling the daemon (`tengri-savdag`), the reflection mirror (`tengri-toli`), and the algebraic combinators (`tengri-sulde`, `tengri-lus`) ensures that CLI clients and shell hooks remain lightweight ($< 2\text{MB}$) while the heavy GHC runtime remains isolated within long-lived daemon server processes.
 
 ---
 
-### Decision D2: Resident `GhcMonad` Evaluation Thread (`tengri-ulgen`)
+### Decision D2: Resident `GhcMonad` Evaluation Thread (`tengri-savdag`)
 
 **Problem:** GHC's `HscEnv` and typechecker session are not thread-safe for arbitrary concurrent evaluation. Spawning multiple OS threads that each invoke `runGhc` concurrently can corrupt shared RTS data structures or global symbol tables.
 
-**Resolution:** `tengri-ulgen` encapsulates the resident GHC session inside a single dedicated worker thread managed by `UlgenWorker`:
+**Resolution:** `tengri-savdag` encapsulates the resident GHC session inside a single dedicated worker thread managed by `SavdagWorker`:
 
 ```haskell
-data UlgenWorker = UlgenWorker
-  { workerThread  :: !ThreadId
-  , workerChan    :: !(Chan UlgenRequest)
-  , workerRunning :: !(MVar Bool)
+data SavdagWorker = SavdagWorker
+  { workerReqChan  :: !(Chan SavdagRequest)
+  , workerThreadId :: !ThreadId
   }
 ```
 
-Clients submit evaluation requests (`UlgenRequest`), and the worker synchronizes the response via an `MVar`. This eliminates thread-safety hazards while retaining warm session state across turns.
+Clients submit evaluation requests (`SavdagRequest`), and the worker synchronizes the response via an `MVar`. This eliminates thread-safety hazards while retaining warm session state across turns.
 
 ---
 
@@ -105,14 +100,14 @@ Clients submit evaluation requests (`UlgenRequest`), and the worker synchronizes
 
 **Problem:** Standard `GHC.compileExpr` and `GHC.exprType` do not pass interactive statements through `Plugin.parsedResultAction`. `REC { a = 1 }` fails to parse as a constructor.
 
-**Resolution:** `tengri-ulgen` manufactures a mock `ModSummary` directly in memory using `mkMockModSummary`:
+**Resolution:** `tengri-savdag` manufactures a mock `ModSummary` directly in memory using `mkMockModSummary`:
 
 ```haskell
 mkMockModSummary
-  :: UnitId
+  :: DynFlags
   -> ModuleName
   -> FilePath
-  -> StringBuffer
+  -> ModSummary
   -> ModSummary
 ```
 

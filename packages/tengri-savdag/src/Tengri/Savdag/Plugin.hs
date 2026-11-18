@@ -1,4 +1,4 @@
--- | Module: Tengri.Ulgen.Plugin
+-- | Module: Tengri.Savdag.Plugin
 -- Description: Source plugin pipeline runner and synthetic snippet desugaring
 --
 -- This module implements in-memory source plugin execution over interactive
@@ -6,14 +6,14 @@
 --
 -- = Architectural Context
 --
--- Per Note [Source Plugin Desugaring Architecture] [ref:note-source-plugin-arch],
+-- Per Note [Source Plugin Architecture] [ref:note-source-plugin-arch],
 -- source plugins intercept GHC's parsed abstract syntax tree ('HsParsedModule')
 -- before the renamer and typechecker run.
 --
 -- Standard GHCi does not execute 'parsedResultAction' on interactive prompt input
 -- because interactive statements lack a 'ModSummary'.
 --
--- 'Tengri.Ulgen.Plugin' bridges this gap by:
+-- 'Tengri.Savdag.Plugin' bridges this gap by:
 -- 1. Wrapping bare interactive expressions (e.g. @REC { a = 1, b = "hello" }@)
 --    into a synthetic in-memory module (@module Tengri.Interactive where it = ...@).
 -- 2. Parsing the module using GHC's 'hscParse' against our synthetic 'ModSummary'.
@@ -34,7 +34,7 @@
 --
 -- >>> desugarSnippetText "REC { a = 10 }"
 -- Right "module Tengri.Interactive where\nimport qualified Polytropos as Polytropos\nit = Polytropos.insertField #a 10 Polytropos.emptyRecord"
-module Tengri.Ulgen.Plugin
+module Tengri.Savdag.Plugin
   ( -- * High-Level Transformation
     desugarInteractiveModule
   , wrapExpressionSnippet
@@ -63,7 +63,7 @@ import GHC.Types.Error (emptyMessages)
 import GHC.Utils.Outputable (ppr, showSDocUnsafe)
 
 import GHC.Unit.Module.ModSummary (ModSummary(..))
-import Tengri.Ulgen.MockSummary
+import Tengri.Savdag.MockSummary
   ( mkMockModSummary
   )
 
