@@ -22,6 +22,12 @@ main = hspec $ parallel $ do
     it "parses expression evaluation command" $ do
       parseArgs ["map (+1) [1..5]"] `shouldBe` CmdEval "map (+1) [1..5]"
 
+    it "parses expression evaluation command with eval keyword" $ do
+      parseArgs ["eval", "map", "(+1)", "[1..5]"] `shouldBe` CmdEval "map (+1) [1..5]"
+
+    it "parses bare multi-word expression evaluation command" $ do
+      parseArgs ["1", "+", "1"] `shouldBe` CmdEval "1 + 1"
+
     it "parses repl command" $ do
       parseArgs ["repl"] `shouldBe` CmdRepl
 

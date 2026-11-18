@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Main (main) where
@@ -38,7 +39,7 @@ main = hspec $ parallel $ do
       outRef <- newIORef ([] :: [Text])
       let mockIn = pure [["apple", "banana"], ["apple", "cherry"]] :: IO [[Text]]
           mockOut = mapM_ (\(k, v) -> modifyIORef' outRef (++ [k <> ":" <> T.pack (show v)])) . Map.toList
-      runLusWith mockIn mockOut (Map.fromListWith (+) . map (\x -> (x, 1 :: Int)) . concat)
+      runLusWith mockIn mockOut (Map.fromListWith (+) . map (, 1 :: Int) . concat)
       captured <- readIORef outRef
       captured `shouldBe` ["apple:2", "banana:1", "cherry:1"]
 

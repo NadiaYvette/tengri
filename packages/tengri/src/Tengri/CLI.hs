@@ -60,6 +60,7 @@ module Tengri.CLI
   , normalizeGitUrl
   ) where
 
+import Control.Monad (unless)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
@@ -95,9 +96,11 @@ data Command
 
 -- | Parses command line argument lists into structured 'Command' actions.
 --
--- Recognizes keywords @"repl"@, @"giturl"@, @"toli"@, @"--help"@, and @"--version"@.
--- Any single bare expression is interpreted as 'CmdEval'. Empty arguments fallback
--- to 'CmdHelp'.
+-- Recognizes keywords @"repl"@, @"giturl"@, @"toli"@, @"eval"@, @"--help"@, and @"--version"@.
+-- Bare expressions (e.g. @tengri "1 + 1"@ or @tengri 1 + 1@) as well as explicitly
+-- prefixed expressions (@tengri eval "map (*2) [1..10]"@) are routed to 'CmdEval'
+-- after joining argument tokens with whitespace.
+-- Empty argument lists fallback to 'CmdHelp'.
 parseArgs :: [Text] -> Command
 parseArgs [] = CmdHelp
 parseArgs ["--help"] = CmdHelp
@@ -110,8 +113,8 @@ parseArgs ("giturl" : rest) = case rest of
   (url : _)        -> CmdGitUrl False url
   []               -> CmdHelp
 parseArgs ("toli" : rest) = parseToliArgs rest
-parseArgs [expr] = CmdEval expr
-parseArgs (expr : _) = CmdEval expr
+parseArgs ("eval" : rest) = CmdEval (T.unwords rest)
+parseArgs exprTokens      = CmdEval (T.unwords exprTokens)
 
 -- | Parses subcommand arguments beneath @tengri toli@.
 --
@@ -158,7 +161,7 @@ runCommand (CmdEval expr) = do
   -- Forward expression evaluation to resident server handler
   res <- handleRequest (EvalPipe expr)
   case res of
-    EvalResult out -> TIO.putStrLn out
+    EvalResult out -> unless (T.null out || out == "()") (TIO.putStrLn out)
     ErrorResult err -> do
       TIO.putStrLn $ "Error: " <> err
       exitFailure

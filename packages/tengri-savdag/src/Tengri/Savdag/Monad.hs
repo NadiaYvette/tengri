@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 -- | Module: Tengri.Savdag.Monad
 -- Description: GhcMonad session runner and environment configuration
 --
@@ -11,6 +13,33 @@
 -- Instead of repeatedly forking cold @ghc@ or @ghci@ subprocesses (which incur high
 -- process startup and dynamic linker latencies of 150–400ms per invocation),
 -- 'SavdagM' maintains an initialized 'HscEnv' resident in memory.
+--
+-- == Note [In-Memory GhcMonad Evaluation and Exception Containment]
+--
+-- Traditional shell integration with GHC either invokes @ghc -e@ (incurring cold
+-- RTS startup overhead and package database reloading penalties on every keystroke)
+-- or forks an interactive @ghci@ slave process (subject to TTY escape sequences,
+-- race conditions, and prompt parsing fragility).
+--
+-- 'Tengri.Savdag.Monad' takes a non-invasive, in-memory approach:
+-- 1. Evaluator execution runs inside an instance of 'GhcMonad' ('SavdagM').
+-- 2. Expression type checking ('exprType TM_Inst') classifies expressions before compilation.
+-- 3. Pure expressions are wrapped in @show (...)@ and compiled to bytecode.
+-- 4. Effectful computations (@IO a@) are compiled to actions and evaluated via 'unsafeCoerce'.
+-- 5. All evaluations are wrapped with 'handleSourceError' (for static phase diagnostics)
+--    and 'Control.Exception.try' paired with 'Control.Exception.evaluate' (for dynamic
+--    phase exceptions such as division by zero or pattern match failures).
+--
+-- == Note [Row Polymorphic Syntactic Desugaring]
+--
+-- Row-polymorphic record literals (@REC { ... }@) and sum variants (@VAR { ... }@)
+-- require GHC's source plugin pass ('Polytropos.Plugin') to lower syntactic sugar
+-- into Core dictionary combinators ('Polytropos.insertField', 'Polytropos.inject').
+--
+-- Because standard GHC interactive evaluation bypasses 'parsedResultAction' due to
+-- the absence of a compilation unit 'ModSummary', 'evalSavdagExpr' intercepts
+-- row expressions and feeds them through 'Tengri.Savdag.Plugin.desugarInteractiveSnippet'.
+-- The rewritten AST is extracted in-memory and subsequently compiled without disk I/O.
 --
 -- == Invariants & Guarantees
 --
@@ -37,6 +66,8 @@ module Tengri.Savdag.Monad
   , evalSavdagExpr
   ) where
 
+import Control.Monad.IO.Class (liftIO)
+import qualified Control.Exception as E
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC
@@ -44,6 +75,7 @@ import GHC
   , Ghc
   , InteractiveImport(..)
   , exprType
+  , getSession
   , getSessionDynFlags
   , handleSourceError
   , mkModuleName
@@ -56,8 +88,12 @@ import GHC.Types.SourceError (SourceError)
 import GHC.Tc.Module (TcRnExprMode(TM_Inst))
 import GHC.Driver.DynFlags (xopt_set)
 import GHC.LanguageExtensions.Type (Extension(..))
+import qualified GHC.Paths
 import GHC.Runtime.Eval (compileExpr)
 import GHC.Utils.Outputable (ppr, showSDocUnsafe)
+import qualified Polytropos.Plugin
+import Tengri.Savdag.Plugin (desugarInteractiveSnippet)
+import Unsafe.Coerce (unsafeCoerce)
 
 -- | Execution monad for warm GHC interactive sessions.
 --
@@ -86,17 +122,17 @@ data SavdagConfig = SavdagConfig
 
 -- | Default configuration for 'SavdagConfig'.
 --
--- Preloads @"Prelude"@ and activates 'OverloadedRecordDot' and 'DataKinds'.
+-- Preloads @"Prelude"@ and activates row polymorphism, type applications, and default rules.
 --
 -- Sensible defaults:
 --
--- * Library path bound to active toolchain libdir.
--- * Common record extensions enabled for modern row manipulation.
+-- * Library path dynamically bound via 'GHC.Paths.libdir'.
+-- * Standard record, label, and defaulting extensions enabled.
 defaultSavdagConfig :: SavdagConfig
 defaultSavdagConfig = SavdagConfig
-  { savdagLibDir     = Just "/home/nyc/.ghcup/ghc/9.14.1/lib/ghc-9.14.1/lib"
+  { savdagLibDir     = Just GHC.Paths.libdir
   , savdagImports    = ["Prelude"]
-  , savdagExtensions = [OverloadedRecordDot, DataKinds, TypeApplications]
+  , savdagExtensions = [ExtendedDefaultRules, OverloadedRecordDot, DataKinds, TypeApplications, OverloadedStrings, OverloadedLabels]
   }
 
 -- | Executes a 'SavdagM' computation within an initialized GHC session.
@@ -139,11 +175,67 @@ reflectSavdagType exprStr = handleSourceError onErr $ do
 
 -- | Evaluates an expression string in the warm GHC session and formats the result.
 --
--- Invokes GHC's internal bytecode compiler and runtime evaluator.
+-- Invokes GHC's internal bytecode compiler and runtime evaluator. Supports:
+-- 1. __Syntactic Sugar Lowering:__ If the input contains row record literals (@REC { ... }@)
+--    or variant literals (@VAR { ... }@), invokes 'desugarInteractiveSnippet' to lower
+--    them through 'Polytropos.Plugin' before evaluation.
+-- 2. __Type-Aware Evaluation Dispatch:__ Inspects expression type via 'exprType'.
+--    * When returning @IO ()@: Executes the action effectfully and yields @Right "()"@.
+--    * When returning @IO a@: Compiles @fmap show expr@, executes the action, and yields @Right (show result)@.
+--    * When returning pure @a@: Compiles @show expr@, evaluates the string representation, and yields @Right (show result)@.
+-- 3. __Exception Containment:__ Catches compiler errors via 'handleSourceError' and runtime
+--    exceptions via 'E.try' and 'E.evaluate', safely returning 'Left' diagnostics without
+--    corrupting or terminating the resident session.
+--
+-- Parameters:
+--
+-- * @exprStr@: Raw Haskell expression string to evaluate.
+--
+-- Returns @Right textualOutput@ on success, or @Left errorDiagnostic@ on failure.
 evalSavdagExpr :: String -> SavdagM (Either Text Text)
-evalSavdagExpr exprStr = handleSourceError onErr $ do
-  _ <- compileExpr exprStr
-  pure $ Right ("evaluated: " <> T.pack exprStr)
+evalSavdagExpr exprStr = handleSourceError onCompileErr $ do
+  env <- getSession
+  let shouldDesugar = "REC" `T.isInfixOf` T.pack exprStr || "VAR" `T.isInfixOf` T.pack exprStr
+  targetStr <- if shouldDesugar
+    then do
+      desugaredRes <- desugarInteractiveSnippet env Polytropos.Plugin.plugin (T.pack exprStr)
+      pure $ case desugaredRes of
+        Right d -> T.unpack d
+        Left _  -> exprStr
+    else pure exprStr
+
+  ty <- exprType TM_Inst targetStr
+  let tyStr = showSDocUnsafe (ppr ty)
+  if "IO ()" `T.isSuffixOf` T.pack tyStr
+    then do
+      hv <- compileExpr targetStr
+      res <- liftIO $ E.try $ do
+        let act = unsafeCoerce hv :: IO ()
+        act
+        pure ("()" :: Text)
+      pure $ case res of
+        Right t -> Right t
+        Left (e :: E.SomeException) -> Left (T.pack (show e))
+    else if "IO " `T.isInfixOf` T.pack tyStr
+      then do
+        hv <- compileExpr ("fmap show (" ++ targetStr ++ ")")
+        res <- liftIO $ E.try $ do
+          let act = unsafeCoerce hv :: IO String
+          s <- act
+          _ <- E.evaluate (length s)
+          pure (T.pack s)
+        pure $ case res of
+          Right t -> Right t
+          Left (e :: E.SomeException) -> Left (T.pack (show e))
+      else do
+        hv <- compileExpr ("show (" ++ targetStr ++ ")")
+        res <- liftIO $ E.try $ do
+          let s = unsafeCoerce hv :: String
+          _ <- E.evaluate (length s)
+          pure (T.pack s)
+        pure $ case res of
+          Right t -> Right t
+          Left (e :: E.SomeException) -> Left (T.pack (show e))
   where
-    onErr :: SourceError -> SavdagM (Either Text Text)
-    onErr e = pure $ Left (T.pack (show e))
+    onCompileErr :: SourceError -> SavdagM (Either Text Text)
+    onCompileErr e = pure $ Left (T.pack (show e))

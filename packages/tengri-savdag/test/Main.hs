@@ -45,12 +45,14 @@ main = hspec $ parallel $ do
       parseResponse (renderResponse res4) `shouldBe` Right res4
 
     it "dispatches EvalPipe request" $ do
-      res <- handleRequest (EvalPipe "filter isJust")
-      res `shouldBe` EvalResult "evaluated: filter isJust"
+      res <- handleRequest (EvalPipe "1 + 1")
+      res `shouldBe` EvalResult "2"
 
     it "dispatches ReflectType request" $ do
-      res <- handleRequest (ReflectType "fmap")
-      res `shouldBe` ReflectResult "forall a. a -> fmap"
+      res <- handleRequest (ReflectType "putStrLn")
+      case res of
+        ReflectResult ty -> ty `shouldSatisfy` (\t -> "IO ()" `T.isInfixOf` t)
+        _ -> expectationFailure "Expected ReflectResult"
 
     it "dispatches ArticulateHole request" $ do
       res <- handleRequest (ArticulateHole "_$")
@@ -66,7 +68,7 @@ main = hspec $ parallel $ do
     it "provides valid default configuration" $ do
       savdagImports defaultSavdagConfig `shouldBe` ["Prelude"]
       case savdagLibDir defaultSavdagConfig of
-        Just p  -> p `shouldSatisfy` (\path -> not (null path))
+        Just p  -> p `shouldSatisfy` (not . null)
         Nothing -> expectationFailure "Expected Just libdir"
 
   describe "Tengri.Savdag.Plugin" $ do

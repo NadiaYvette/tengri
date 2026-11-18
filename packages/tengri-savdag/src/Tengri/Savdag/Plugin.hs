@@ -1,3 +1,5 @@
+{-# LANGUAGE ViewPatterns #-}
+
 -- | Module: Tengri.Savdag.Plugin
 -- Description: Source plugin pipeline runner and synthetic snippet desugaring
 --
@@ -30,6 +32,22 @@
 --    AST is preserved unchanged.
 -- 3. __Comment Density:__ Exceeds the 50% comment density threshold for physical verification.
 --
+-- == AST Pattern Extraction Mechanics
+--
+-- During interactive lowering, expressions bound to variable identifier @it@ are parsed
+-- by GHC into a top-level value binding ('HsDecl' wrapping 'ValD').
+-- Depending on compiler parser flags and grammar productions, top-level equations
+-- may surface as:
+--
+-- 1. 'FunBind': Function equations with match groups ('MatchGroup'), single-branch matches
+--    ('Match'), and guarded right-hand sides ('GRHSs').
+-- 2. 'PatBind': Pattern equations binding variables ('VarPat') directly to guarded
+--    right-hand expressions ('GRHSs').
+--
+-- 'extractExprFromDecl' uses view patterns ('unLoc') to transparently traverse source
+-- span annotations ('GenLocated'), isolating the inner expression AST ('LHsExpr GhcPs')
+-- regardless of whether GHC formatted the assignment as a function binding or pattern binding.
+--
 -- = Worked Example
 --
 -- >>> desugarSnippetText "REC { a = 10 }"
@@ -37,18 +55,31 @@
 module Tengri.Savdag.Plugin
   ( -- * High-Level Transformation
     desugarInteractiveModule
+  , desugarInteractiveSnippet
   , wrapExpressionSnippet
+  , extractExprFromDecl
     -- * Pipeline Dispatch
   , runSourcePluginPass
   , runHscAction
   ) where
 
 import Control.Monad.IO.Class (MonadIO(..))
+import Data.List.NonEmpty (NonEmpty(..))
+import Data.Maybe (listToMaybe, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC
-  ( HsParsedModule(..)
+  ( GRHS(..)
+  , GRHSs(..)
+  , GhcPs
+  , HsBindLR(..)
+  , HsDecl(..)
+  , HsParsedModule(..)
+  , Match(..)
+  , MatchGroup(..)
+  , hsmodDecls
   , mkModuleName
+  , unLoc
   )
 import GHC.Data.StringBuffer (stringToStringBuffer)
 import GHC.Driver.Env.Types (Hsc(..), HscEnv(..))
@@ -67,6 +98,51 @@ import Tengri.Savdag.MockSummary
   ( mkMockModSummary
   )
 
+-- | Extracts the desugared RHS expression from a declaration binding 'it'.
+--
+-- Inspects function bindings and pattern bindings created by 'wrapExpressionSnippet',
+-- extracting the lowered AST expression bound to variable identifier @it@.
+extractExprFromDecl :: HsDecl GhcPs -> Maybe String
+extractExprFromDecl (ValD _ (FunBind { fun_matches = MG { mg_alts = unLoc -> [unLoc -> (Match { m_grhss = GRHSs { grhssGRHSs = (unLoc -> (GRHS _ _ body)) :| _ } })] } })) =
+  Just (showSDocUnsafe (ppr body))
+extractExprFromDecl (ValD _ (PatBind { pat_rhs = GRHSs { grhssGRHSs = (unLoc -> (GRHS _ _ body)) :| _ } })) =
+  Just (showSDocUnsafe (ppr body))
+extractExprFromDecl _ = Nothing
+
+-- | Parses, transforms, and extracts lowered expression text through a source plugin.
+--
+-- Takes raw snippet text (e.g. @REC { a = 1, b = 2 }@), wraps it in a synthetic
+-- compilation unit, executes the plugin's 'parsedResultAction', and extracts the
+-- rewritten RHS expression.
+--
+-- Parameters:
+--
+-- * @env@: Active 'HscEnv' compiler session.
+-- * @plug@: Source plugin instance (e.g. 'Polytropos.Plugin.plugin').
+-- * @rawSnippet@: Raw interactive snippet text.
+--
+-- Returns @Right desugaredExpr@ on success, or fallback/error diagnostics on failure.
+desugarInteractiveSnippet
+  :: (MonadIO m)
+  => HscEnv
+  -> Plugin
+  -> Text
+  -> m (Either Text Text)
+desugarInteractiveSnippet env plug rawSnippet = liftIO $ do
+  let modSrc = T.unpack (wrapExpressionSnippet rawSnippet)
+  let mName  = mkModuleName "Tengri.Interactive"
+  let ms     = (mkMockModSummary (hsc_dflags env) mName "<interactive>")
+                 { ms_hspp_buf = Just (stringToStringBuffer modSrc) }
+  -- Parse the synthetic module from the in-memory string buffer
+  parsedMod <- hscParse env ms
+  let initRes = ParsedResult parsedMod (PsMessages emptyMessages emptyMessages)
+  -- Run the source plugin pass
+  transformedRes <- runSourcePluginPass plug [] env initRes
+  let hsmod = unLoc (hpm_module (parsedResultModule transformedRes))
+  let decls = hsmodDecls hsmod
+  case listToMaybe (mapMaybe (extractExprFromDecl . unLoc) decls) of
+    Just d  -> pure $ Right (T.pack d)
+    Nothing -> pure $ Right rawSnippet
 -- | Wraps a raw expression string into a well-formed synthetic module.
 --
 -- Binds the expression to variable identifier @it@ within module @"Tengri.Interactive"@.

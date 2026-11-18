@@ -43,6 +43,12 @@ import qualified Data.Text as T
 import System.Environment (lookupEnv)
 import System.FilePath ((</>))
 
+import Tengri.Savdag.Monad
+  ( defaultSavdagConfig
+  , evalSavdagExpr
+  , reflectSavdagType
+  , runSavdag
+  )
 import Tengri.Savdag.Worker (SavdagWorker, evalInWorker, reflectInWorker)
 
 -- | Represents a client request dispatched to the 'tengri-savdag' daemon.
@@ -127,15 +133,19 @@ renderResponse (ErrorResult err)      = "ERR:" <> err
 
 -- | Handles an incoming 'Request' and produces a corresponding 'Response'.
 --
--- In warm daemon mode, this dispatches expression evaluation against
--- preloaded algebraic prelude symbols.
+-- Executes expression evaluation and type reflection against the warm 'SavdagM' session
+-- initialized with 'defaultSavdagConfig'.
 handleRequest :: Request -> IO Response
 handleRequest (EvalPipe expr) = do
-  -- Pure evaluation formatting fallback for warm session
-  pure $ EvalResult $ "evaluated: " <> expr
+  res <- runSavdag defaultSavdagConfig (evalSavdagExpr (T.unpack expr))
+  pure $ case res of
+    Right out -> EvalResult out
+    Left err  -> ErrorResult err
 handleRequest (ReflectType expr) = do
-  -- Type reflection dispatch
-  pure $ ReflectResult $ "forall a. a -> " <> expr
+  res <- runSavdag defaultSavdagConfig (reflectSavdagType (T.unpack expr))
+  pure $ case res of
+    Right ty  -> ReflectResult ty
+    Left err  -> ErrorResult err
 handleRequest (ArticulateHole hole) = do
   -- Articulation dispatch for hole synthesis
   pure $ ArticulateResult $ "Wither.mapMaybe (" <> hole <> ")"
